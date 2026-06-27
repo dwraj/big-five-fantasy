@@ -2,10 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 
 export const initSupabase = () => {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl) {
-    throw new Error('VITE_SUPABASE_URL is required');
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn('⚠️  Supabase credentials missing. API requests will fail.');
+    console.warn('   Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+    // Return a dummy client that won't crash the server startup
+    return createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
   }
 
   return createClient(supabaseUrl, supabaseKey);

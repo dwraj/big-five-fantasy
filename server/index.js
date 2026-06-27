@@ -8,7 +8,10 @@ import playerRoutes from './routes/player.js';
 import gameweekRoutes from './routes/gameweek.js';
 import matchupRoutes from './routes/matchup.js';
 
-dotenv.config({ path: '.env.local' });
+// Load env vars from .env.local if it exists (local dev), otherwise use process.env (production)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: '.env.local' });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
