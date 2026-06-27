@@ -1513,6 +1513,137 @@
     ? 'http://localhost:3001/api'
     : 'https://big-five-fantasy.railway.app/api';
 
+  // API utility functions
+  async function fetchAPI(endpoint) {
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`);
+      if (!response.ok) {
+        console.warn(`API error: ${response.status} ${endpoint}`);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to fetch ${endpoint}:`, error);
+      return null;
+    }
+  }
+
+  async function loadPlayers() {
+    const players = await fetchAPI('/players');
+    return players || [];
+  }
+
+  async function loadGameweeks() {
+    const gw = await fetchAPI('/gameweeks/current');
+    return gw;
+  }
+
+  async function loadStandings(leagueId) {
+    const standings = await fetchAPI(`/leagues/${leagueId}/standings`);
+    return standings || [];
+  }
+
+  // Load and populate players on page init
+  let cachedPlayers = [];
+  window.addEventListener('load', async () => {
+    console.log('📡 Loading players from API...');
+    cachedPlayers = await loadPlayers();
+    if (cachedPlayers && cachedPlayers.length > 0) {
+      console.log(`✅ Loaded ${cachedPlayers.length} players`);
+      populatePlayerCards();
+    } else {
+      console.log('📊 No players from API, using mock data');
+    }
+  });
+
+  const leagueMap = {
+    'EPL': { color: '#6D28D9', bg: 'rgba(109,40,217,0.07)', badge: '#C8102E' },
+    'La Liga': { color: '#DC2626', bg: 'rgba(220,38,38,0.07)', badge: '#FEBE10' },
+    'Serie A': { color: '#1D4ED8', bg: 'rgba(29,78,216,0.07)', badge: '#0068A8' },
+    'Bundesliga': { color: '#D97706', bg: 'rgba(217,119,6,0.07)', badge: '#DC052D' },
+    'Ligue 1': { color: '#059669', bg: 'rgba(5,150,105,0.07)', badge: '#004170' }
+  };
+
+  function populatePlayerCards() {
+    if (!cachedPlayers || cachedPlayers.length === 0) return;
+
+    const topStartersCards = document.querySelectorAll('.tc');
+    const maxCards = Math.min(3, cachedPlayers.length);
+
+    for (let i = 0; i < maxCards; i++) {
+      const player = cachedPlayers[i];
+      const card = topStartersCards[i];
+      if (!card || !player) continue;
+
+      const nameEl = card.querySelector('.tc-name');
+      if (nameEl) nameEl.textContent = player.name;
+
+      const metaEl = card.querySelector('.tc-meta');
+      if (metaEl) metaEl.textContent = `${player.position || 'MID'} · ${player.club || 'Club'}`;
+
+      const leagueInfo = leagueMap[player.league] || leagueMap['EPL'];
+      const topEl = card.querySelector('.tc-top');
+      if (topEl) topEl.style.background = leagueInfo.bg;
+
+      const leagueEl = card.querySelector('.tc-league');
+      if (leagueEl) {
+        leagueEl.textContent = player.league || 'EPL';
+        leagueEl.style.color = leagueInfo.color;
+        leagueEl.style.background = leagueInfo.bg;
+      }
+
+      const badgeEl = card.querySelector('.tc-badge');
+      if (badgeEl && leagueInfo.badge) {
+        badgeEl.style.background = leagueInfo.badge;
+      }
+
+      if (player.image_url) {
+        card.style.backgroundImage = `url('${player.image_url}')`;
+        card.style.backgroundSize = 'cover';
+        card.style.backgroundPosition = 'center';
+      }
+    }
+  }
+
+  function populateRosterRows() {
+    if (!cachedPlayers || cachedPlayers.length < 6) return;
+
+    const rosterRows = document.querySelectorAll('#screen-myteam .rr');
+    const maxRows = Math.min(6, cachedPlayers.length);
+
+    for (let i = 0; i < maxRows; i++) {
+      const player = cachedPlayers[i];
+      const row = rosterRows[i];
+      if (!row || !player) continue;
+
+      const nameEl = row.querySelector('.rr-name');
+      if (nameEl) nameEl.textContent = player.name;
+
+      const metaEl = row.querySelector('.rr-meta');
+      if (metaEl) metaEl.textContent = `${player.position || 'MID'} · ${player.club || 'Club'} · ${player.league || 'EPL'}`;
+
+      const badgeEl = row.querySelector('.rr-badge');
+      if (badgeEl) {
+        const leagueInfo = leagueMap[player.league] || leagueMap['EPL'];
+        badgeEl.style.background = leagueInfo.badge;
+      }
+
+      // Update league class for left border color
+      row.className = `rr ${getLeagueClass(player.league)}`;
+    }
+  }
+
+  function getLeagueClass(league) {
+    const classMap = {
+      'EPL': 'epl',
+      'La Liga': 'la',
+      'Serie A': 'sa',
+      'Bundesliga': 'bl',
+      'Ligue 1': 'l1'
+    };
+    return classMap[league] || 'epl';
+  }
+
   /* Count-up animation */
   function countUp(el, target, ms) {
     if (!el) return;
@@ -1564,6 +1695,10 @@
       countUp(document.getElementById('v-gw'), 62, 900);
       countUp(document.getElementById('v-total'), 1763, 1100);
       countUp(document.getElementById('v-match'), 62, 900);
+      populatePlayerCards();
+    }
+    if (id === 'myteam') {
+      populateRosterRows();
     }
     if (id === 'matchup') {
       countUp(document.getElementById('v-match2'), 62, 900);
