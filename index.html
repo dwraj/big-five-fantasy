@@ -553,6 +553,10 @@
       object-fit: cover;
       display: block;
     }
+    .tc-image:not([src]), .tc-image[src=""] {
+      visibility: hidden;
+      height: 0;
+    }
 
     .tc-top {
       padding: 14px 12px 10px;
@@ -1231,7 +1235,7 @@
         </div>
         <div class="tc-row">
           <div class="tc" style="animation-delay: 0.17s">
-            <img class="tc-image" src="https://media.api-sports.io/players/278.png" alt="M. Salah">
+            <img class="tc-image" src="" alt="">
             <div class="tc-top" style="background: rgba(109,40,217,0.07)">
               <div class="tc-badge" style="background: #C8102E">LIV</div>
               <div class="tc-pts" style="color: var(--epl)">18</div>
@@ -1253,7 +1257,7 @@
             </div>
           </div>
           <div class="tc" style="animation-delay: 0.225s">
-            <img class="tc-image" src="https://media.api-sports.io/players/821.png" alt="Vinícius Jr.">
+            <img class="tc-image" src="" alt="">
             <div class="tc-top" style="background: rgba(220,38,38,0.07)">
               <div class="tc-badge" style="background: #FEBE10; color: #00529F">RMA</div>
               <div class="tc-pts" style="color: var(--ll)">14</div>
@@ -1275,7 +1279,7 @@
             </div>
           </div>
           <div class="tc" style="animation-delay: 0.28s">
-            <img class="tc-image" src="https://media.api-sports.io/players/881.png" alt="A. Onana">
+            <img class="tc-image" src="" alt="">
             <div class="tc-top" style="background: rgba(29,78,216,0.07)">
               <div class="tc-badge" style="background: #0068A8">INT</div>
               <div class="tc-pts" style="color: var(--sa)">11</div>
