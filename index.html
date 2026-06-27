@@ -1508,6 +1508,11 @@
 </div><!-- /shell -->
 
 <script>
+  // API configuration
+  const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3001/api'
+    : 'https://big-five-fantasy.railway.app/api';
+
   /* Count-up animation */
   function countUp(el, target, ms) {
     if (!el) return;
