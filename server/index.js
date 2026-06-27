@@ -16,8 +16,19 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  'https://big-five-fantasy.vercel.app',
+  'http://localhost:3001',
+  'http://localhost:5173',
+];
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow server-to-server requests (no origin header) and whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+}));
 app.use(express.json());
 
 // Initialize Supabase
