@@ -4,78 +4,141 @@ A fantasy football platform for the European top 5 leagues (EPL, La Liga, Serie 
 
 ## Features
 
-- **Cross-league roster building** — Pick players from all 5 leagues
-- **Head-to-head matchups** — Compete weekly with other managers
-- **Async snake draft** — Flexible draft with auto-pick queues
-- **Waivers & trades** — Claim free agents and trade with other managers
-- **Real-time scoring** — Live match updates and gameweek scoring
-- **Beautiful UI** — Spring physics animations, responsive design
+- **Cross-league roster building** — pick players from all 5 leagues
+- **Head-to-head matchups** — compete weekly with other managers
+- **Snake draft** — server-enforced draft with bot auto-picks (in sim mode)
+- **Waivers & trades** — claim free agents and trade with other managers
+- **Real-time scoring** — live match updates and gameweek scoring
+- **Dev simulation framework** — drive the whole game locally with a dev panel
 
 ## Tech Stack
 
-**Frontend**
-- HTML5 + CSS3 + Vanilla JavaScript
-- Tabler Icons
-- Deploy to Vercel
+**Frontend** — React 19 + Vite + TypeScript SPA (in `web/`)
+- React Router, TanStack Query, CSS Modules, Tabler Icons
+- Builds to `web/dist`; hosted on Vercel
 
-**Backend**
-- Node.js + Express
-- Deploy to Railway
+**Backend** — Node.js + Express (in `server/`)
+- One router per domain under `/api`; hosted on Railway
 
-**Database**
-- Supabase (Postgres)
+**Database** — Supabase (Postgres)
 
-**External Data**
-- API-Football (api-sports.io)
+**External data** — API-Football (api-sports.io)
 
 ## Quick Start
 
-### Local Development
+### Prerequisites
+- Node.js 20+
+- Docker Desktop + the [Supabase CLI](https://supabase.com/docs/guides/cli) (for the local database)
+
+### One-command local stack
 
 ```bash
-# Install dependencies
-npm install
-
-# Start backend server
-npm run dev
-
-# In another terminal: serve frontend
-python3 -m http.server 8000
-
-# Open http://localhost:8000/index.html
+npm run fb4-test
 ```
 
-### Environment Setup
+This boots everything: Docker → `supabase db reset` (migrate + seed) → writes `.env.local`
+→ starts the **backend on :3001** and the **Vite dev server on :5173** (with HMR), then opens
+the app. Vite proxies `/api` to the backend.
 
-Create `.env.local`:
+| Service | URL |
+|---|---|
+| Frontend (React, dev panel, HMR) | http://localhost:5173 |
+| Backend API | http://localhost:3001/api |
+| Supabase Studio | http://localhost:54323 |
+
+Other handy commands:
+
+```bash
+npm run web:dev      # frontend only, against an already-running backend
+npm run dev          # backend only (node --watch server/index.js)
+npm run build        # type-check + build web/ -> web/dist
 ```
-VITE_SUPABASE_URL=https://erkwiyftgyclqctykiad.supabase.co
-VITE_SUPABASE_ANON_KEY=<your-key>
+
+### Environment
+
+`npm run fb4-test` generates `.env.local` for you. For production (Railway/Vercel), set:
+
+```
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
 VITE_API_FOOTBALL_KEY=<your-api-football-key>
+# Frontend (Vercel): optional — overrides the API base URL per environment
+VITE_API_URL=https://<your-railway-app>.up.railway.app/api
 ```
+
+## Testing
+
+### Frontend unit/component tests (Vitest + React Testing Library)
+
+The React app lives in `web/` and has automated tests:
+
+```bash
+npm --prefix web test            # run the suite once
+npm --prefix web run test:watch  # watch mode while developing
+```
+
+Coverage includes:
+- **API client** (`web/src/lib/api.ts`) — base-URL resolution across dev/preview/prod.
+- **Sim state** — `useSim` rehydrates from `/api/dev/state` on load.
+- **Layout + dev panel** — renders the shell and phase controls; a phase button hits the API.
+- **Draft board** — snake-grid rendering and the click-to-draft action.
+
+### Type-check / build
+
+```bash
+npm run build                    # runs tsc + builds web/ -> web/dist
+```
+
+### End-to-end simulation (manual)
+
+Boot the full local stack and exercise the game via the dev panel:
+
+```bash
+npm run fb4-test                 # Supabase + backend :3001 + Vite :5173 (HMR)
+```
+
+Use the 🧪 **SIM** panel (bottom-right) to walk the phases. The acceptance criteria
+and their concrete checks are documented in [`SIM_FRAMEWORK_SPEC.md`](./SIM_FRAMEWORK_SPEC.md) §7:
+
+- **Phase switching** — `PRE_SEASON → DRAFTING → LIVE_ACTION → MID_WEEK → POST_SEASON`
+- **Solo draft** — your pick triggers bot auto-picks up to your next turn
+- **Live scoring** — auto-sim + manual events update the scoreboard; mid-week advance finalizes the gameweek
+- **HMR preserves place** — editing code mid-session keeps your spot (state lives in the DB)
+
+Quick API smoke checks:
+
+```bash
+curl localhost:3001/api/health
+curl localhost:3001/api/dev/state
+```
+
+> Dev/sim routes (`/api/dev/*`) are only mounted when `NODE_ENV !== production`.
 
 ## Project Structure
 
 ```
 .
-├── index.html              # Main UI (fullscreen, all 7 screens)
+├── web/                       # React + Vite + TypeScript frontend (the app)
+│   ├── src/
+│   │   ├── screens/           # the 7 screens (Dashboard, MyTeam, Standings, …)
+│   │   ├── components/        # shared UI, each with a co-located *.module.css
+│   │   ├── sim/               # dev simulation: SimContext, polling, DevPanel
+│   │   ├── lib/api.ts         # typed API client
+│   │   ├── App.tsx / main.tsx # routes + providers
+│   │   └── styles/theme.css   # global design tokens
+│   └── vite.config.ts         # dev proxy (/api -> :3001), build config
 ├── server/
-│   ├── index.js           # Express server
-│   ├── lib/
-│   │   ├── supabase.js    # Supabase client
-│   │   └── apiFootball.js # API-Football wrapper
-│   ├── routes/            # API endpoints
-│   │   ├── league.js
-│   │   ├── team.js
-│   │   ├── player.js
-│   │   ├── gameweek.js
-│   │   └── matchup.js
-│   └── scripts/
-│       ├── setupDb.js     # Database schema
-│       └── syncPlayers.js # Sync players from API
-├── package.json           # Dependencies
-├── DEPLOY.md              # Hosting guide
-└── README.md              # This file
+│   ├── index.js               # Express entry (serves web/dist if built, else legacy)
+│   ├── lib/                   # supabase.js, scoring.js, draftEngine.js, simEngine.js
+│   ├── routes/                # API endpoints (incl. dev.js sim routes)
+│   └── scripts/               # DB seeding + API-Football sync
+├── supabase/                  # migrations, seed.sql, seed_sim.sql, config.toml
+├── scripts/                   # fb4-test.sh (local stack), dev-local.sh
+├── legacy/index.html          # pre-React single-file app (retained for reference)
+├── vercel.json                # Vercel build: npm run build -> web/dist (SPA rewrites)
+├── SIM_FRAMEWORK_SPEC.md      # dev simulation framework spec
+├── DEPLOY.md                  # hosting guide
+└── CLAUDE.md                  # contributor/agent orientation
 ```
 
 ## API Endpoints
@@ -91,83 +154,47 @@ VITE_API_FOOTBALL_KEY=<your-api-football-key>
 | `/api/players/available` | GET | Free agents |
 | `/api/gameweeks/current` | GET | Current gameweek |
 | `/api/matchups/:teamId/current` | GET | Current matchup |
+| `/api/drafts/:leagueId` | GET / POST | Draft session + picks |
+| `/api/dev/*` | GET / POST | Dev simulation (local only) |
 
 ## Database Schema
 
-**Core Tables:**
-- `leagues` — League configurations
-- `teams` — User teams per league
-- `players` — Player master data
-- `gameweeks` — Gameweek schedule
-- `rosters` — Player ownership
-- `lineups` — Weekly starting lineups
-- `player_stats` — Per-gameweek stats
-- `matchups` — Head-to-head matchups
-- `waivers` — Waiver claims
-- `trades` — Trade history
+**Core tables:** `leagues`, `teams`, `players`, `gameweeks`, `rosters`, `lineups`,
+`player_stats`, `matchups`, `waivers`, `trades` (full schema in
+`supabase/migrations/`, prose docs in `DATA_MODEL.md`).
 
 ## Deployment
 
-See [DEPLOY.md](./DEPLOY.md) for complete hosting guide.
+See [DEPLOY.md](./DEPLOY.md) for the full guide.
 
-**TL;DR (Vercel + Railway):**
-```bash
-git push origin main
-# Vercel auto-deploys frontend
-# Railway auto-deploys backend
-# Both live in ~2 minutes
-```
+- **Push to `main`** → Railway `production` redeploys + Vercel production rebuilds.
+- **Push to `test`** → Railway `test` redeploys + Vercel preview.
+- Vercel builds the frontend via `vercel.json` (`npm run build` → `web/dist`).
+- The frontend picks its API base from `VITE_API_URL`, falling back to a hostname
+  switch (canonical Vercel host → prod Railway, otherwise the test API).
 
 ## Data Sync
 
-Populate your database:
 ```bash
-# Sync all players from 5 leagues
-npm run sync:players
-
-# Sync current gameweek fixtures
-npm run sync:fixtures
-
-# Sync live scores (run during weekends)
-npm run sync:live
+npm run sync:players    # players from all 5 leagues
+npm run sync:fixtures   # current gameweek fixtures
+npm run sync:live       # live scores (run during matchdays)
 ```
 
 ## UI Screens
 
-- **Dashboard** — Stats, current matchup, top performers
-- **My Team** — Roster management, starters/bench
-- **Standings** — League table, GW points on hover
-- **Matchup** — Head-to-head comparison
-- **Waivers** — Free agents, priority queue
-- **Trades** — Trade inbox, history
-- **Draft** — Async draft board, pick history
+- **Dashboard** — stats, current matchup, top performers
+- **My Team** — roster, starters/bench
+- **Standings** — league table
+- **Matchup** — head-to-head comparison
+- **Waivers** — free agents, priority queue
+- **Trades** — trade inbox & history
+- **Draft** — draft board + available players (live in sim mode)
 
-## Design System
+## Design Tokens
 
-See `Big Five Design System` docs for component library, animations, and color tokens.
-
-**Key tokens:**
-- EPL: `#6D28D9` (Purple)
-- La Liga: `#DC2626` (Red)
-- Serie A: `#1D4ED8` (Blue)
-- Bundesliga: `#D97706` (Amber)
-- Ligue 1: `#059669` (Green)
-
-## Contributing
-
-1. Create feature branch: `git checkout -b feature/name`
-2. Commit changes: `git commit -m "feat: description"`
-3. Push to branch: `git push origin feature/name`
-4. Open a PR
+- EPL: `#6D28D9` · La Liga: `#DC2626` · Serie A: `#1D4ED8` · Bundesliga: `#D97706` · Ligue 1: `#059669`
 
 ## License
 
 MIT
-
-## Support
-
-For issues, questions, or feature requests, open a GitHub issue.
-
----
-
-Built with ❤️ for fantasy football fans. Deploy in 5 minutes, play forever.
