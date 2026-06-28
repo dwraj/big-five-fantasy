@@ -8,6 +8,8 @@
     "dev": "node --watch server/index.js",
     "start": "node server/index.js",
     "setup:db": "node server/scripts/setupDb.js",
+    "init:schema": "node server/scripts/executeSchema.js",
+    "seed:db": "node server/scripts/seedDb.js",
     "sync:players": "node server/scripts/syncPlayers.js",
     "sync:fixtures": "node server/scripts/syncFixtures.js",
     "sync:live": "node server/scripts/syncLive.js",

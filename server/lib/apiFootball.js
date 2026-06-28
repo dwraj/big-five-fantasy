@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_KEY = process.env.VITE_API_FOOTBALL_KEY;
-const BASE_URL = 'https://api-football-v1.p.rapidapi.com';
+const API_KEY = process.env.VITE_API_FOOTBALL_KEY || process.env.API_FOOTBALL_KEY;
+const BASE_URL = process.env.API_FOOTBALL_BASE_URL || 'https://api-football-v1.p.rapidapi.com';
 
 const client = axios.create({
   baseURL: BASE_URL,
