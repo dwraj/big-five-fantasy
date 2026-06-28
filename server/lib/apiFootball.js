@@ -35,16 +35,38 @@ export const getLiveFixtures = async () => {
   }
 };
 
-export const getPlayers = async (leagueId, season) => {
+export const getPlayers = async (leagueId, season, page = 1) => {
   try {
     const response = await client.get('/players', {
-      params: { league: leagueId, season }
+      params: { league: leagueId, season, page }
     });
-    return response.data.response;
+    return {
+      players: response.data.response || [],
+      paging: response.data.paging
+    };
   } catch (error) {
-    console.error('Error fetching players:', error.message);
-    return [];
+    console.error(`Error fetching players (page ${page}):`, error.message);
+    return { players: [], paging: null };
   }
+};
+
+export const getPlayersAllPages = async (leagueId, season) => {
+  const allPlayers = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const { players, paging } = await getPlayers(leagueId, season, page);
+    allPlayers.push(...players);
+    if (paging) {
+      totalPages = paging.total || 1;
+      page = paging.current + 1;
+    } else {
+      break;
+    }
+  }
+
+  return allPlayers;
 };
 
 export const getPlayerStats = async (playerId, leagueId, season) => {
@@ -95,4 +117,44 @@ export const getInjuries = async (leagueId, season) => {
   }
 };
 
-export default { getFixtures, getLiveFixtures, getPlayers, getPlayerStats, getStandings, getTeams, getInjuries };
+export const getFixturePlayerStats = async (fixtureId) => {
+  try {
+    const response = await client.get('/fixtures/players', {
+      params: { fixture: fixtureId }
+    });
+    return response.data.response;
+  } catch (error) {
+    console.error(`Error fetching fixture ${fixtureId} player stats:`, error.message);
+    return {};
+  }
+};
+
+export const getFixturesByDateRange = async (leagueId, season, startDate, endDate) => {
+  try {
+    const response = await client.get('/fixtures', {
+      params: {
+        league: leagueId,
+        season,
+        from: startDate,
+        to: endDate
+      }
+    });
+    return response.data.response || [];
+  } catch (error) {
+    console.error('Error fetching fixtures by date range:', error.message);
+    return [];
+  }
+};
+
+export default {
+  getFixtures,
+  getLiveFixtures,
+  getPlayers,
+  getPlayersAllPages,
+  getPlayerStats,
+  getStandings,
+  getTeams,
+  getInjuries,
+  getFixturePlayerStats,
+  getFixturesByDateRange
+};

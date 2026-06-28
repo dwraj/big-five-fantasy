@@ -7,6 +7,10 @@ import teamRoutes from './routes/team.js';
 import playerRoutes from './routes/player.js';
 import gameweekRoutes from './routes/gameweek.js';
 import matchupRoutes from './routes/matchup.js';
+import draftRoutes from './routes/draft.js';
+import waiverRoutes from './routes/waiver.js';
+import tradeRoutes from './routes/trade.js';
+import notificationRoutes from './routes/notifications.js';
 
 // Load env vars from .env.local if it exists (local dev), otherwise use process.env (production)
 if (process.env.NODE_ENV !== 'production') {
@@ -51,6 +55,10 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/gameweeks', gameweekRoutes);
 app.use('/api/matchups', matchupRoutes);
+app.use('/api/drafts', draftRoutes);
+app.use('/api/waivers', waiverRoutes);
+app.use('/api/trades', tradeRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {

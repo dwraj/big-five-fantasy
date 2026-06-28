@@ -14,48 +14,107 @@ const LEAGUES = [
   { id: 61, name: 'Ligue 1', season: 2025 }
 ];
 
+async function syncClubsForLeague(leagueId, leagueName) {
+  console.log(`  Syncing clubs for ${leagueName}...`);
+  try {
+    const teams = await apiFootball.getTeams(leagueId);
+    if (!Array.isArray(teams)) {
+      console.log(`    No clubs returned for ${leagueName}`);
+      return 0;
+    }
+
+    for (const teamData of teams) {
+      const { error } = await supabase
+        .from('clubs')
+        .upsert({
+          id: teamData.team.id,
+          name: teamData.team.name,
+          short_name: teamData.team.code || teamData.team.name,
+          logo_url: teamData.team.logo,
+          league_api_id: leagueId,
+          season: 2025
+        }, {
+          onConflict: 'id'
+        });
+
+      if (error) {
+        console.error(`    Error syncing club ${teamData.team.name}:`, error.message);
+      }
+    }
+
+    console.log(`    ✅ Synced ${teams.length} clubs for ${leagueName}`);
+    return teams.length;
+  } catch (error) {
+    console.error(`  ❌ Error syncing clubs for ${leagueName}:`, error.message);
+    return 0;
+  }
+}
+
+async function syncPlayersForLeague(leagueId, leagueName) {
+  console.log(`  Fetching all ${leagueName} players (with pagination)...`);
+
+  try {
+    const players = await apiFootball.getPlayersAllPages(leagueId, 2025);
+
+    if (!Array.isArray(players) || players.length === 0) {
+      console.log(`    No players returned for ${leagueName}`);
+      return 0;
+    }
+
+    let synced = 0;
+    for (const playerData of players) {
+      const player = playerData.player;
+      const stats = playerData.statistics?.[0];
+      const club = stats?.team;
+
+      const { error } = await supabase
+        .from('players')
+        .upsert({
+          external_api_id: String(player.id),
+          name: player.name,
+          position: player.position,
+          club_id: club?.id || null,
+          league_api_id: leagueId,
+          nationality: player.nationality,
+          birth_date: player.birth?.date || null,
+          status: 'active',
+          image_url: player.photo,
+          season_points: 0,
+          ownership_pct: 0
+        }, {
+          onConflict: 'external_api_id'
+        });
+
+      if (error) {
+        console.error(`    Error syncing ${player.name}:`, error.message);
+      } else {
+        synced++;
+      }
+    }
+
+    console.log(`    ✅ Synced ${synced}/${players.length} players from ${leagueName}`);
+    return synced;
+  } catch (error) {
+    console.error(`  ❌ Error syncing ${leagueName}:`, error.message);
+    return 0;
+  }
+}
+
 async function syncPlayers() {
-  console.log('🔄 Syncing players from API-Football...');
+  console.log('🔄 Syncing clubs and players from API-Football...\n');
+
+  let totalClubs = 0;
+  let totalPlayers = 0;
 
   for (const league of LEAGUES) {
-    console.log(`  Fetching ${league.name} players...`);
+    const clubCount = await syncClubsForLeague(league.id, league.name);
+    totalClubs += clubCount;
 
-    try {
-      const players = await apiFootball.getPlayers(league.id, league.season);
-
-      if (!Array.isArray(players)) {
-        console.log(`    No players returned for ${league.name}`);
-        continue;
-      }
-
-      for (const playerData of players) {
-        const player = playerData.player;
-        const { data, error } = await supabase
-          .from('players')
-          .upsert({
-            external_api_id: String(player.id),
-            name: player.name,
-            position: player.position,
-            club: playerData.statistics?.[0]?.team?.name || 'Unknown',
-            league: league.name,
-            status: 'active',
-            image_url: player.photo
-          }, {
-            onConflict: 'external_api_id'
-          });
-
-        if (error) {
-          console.error(`    Error syncing ${player.name}:`, error.message);
-        }
-      }
-
-      console.log(`    ✅ Synced ${players.length} players from ${league.name}`);
-    } catch (error) {
-      console.error(`  ❌ Error syncing ${league.name}:`, error.message);
-    }
+    const playerCount = await syncPlayersForLeague(league.id, league.name);
+    totalPlayers += playerCount;
   }
 
-  console.log('✅ Player sync complete');
+  console.log(`\n✅ Sync complete: ${totalClubs} clubs, ${totalPlayers} players`);
 }
 
 syncPlayers().catch(console.error);
