@@ -21,6 +21,10 @@
     "web:dev": "npm run dev --prefix web",
     "web:install": "npm install --prefix web",
     "build": "npm install --prefix web && npm run build --prefix web",
+    "test": "npm run test:server && npm run test:web",
+    "test:server": "vitest run",
+    "test:server:watch": "vitest",
+    "test:web": "npm test --prefix web",
     "git:add": "git add .",
     "git:commit": "git commit -m",
     "git:push": "git push origin main"
@@ -35,6 +39,7 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "vitest": "^4.1.9"
   }
 }
