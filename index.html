@@ -1538,7 +1538,9 @@
   // API configuration
   const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api'
-    : 'https://big-five-fantasy-production.up.railway.app/api';
+    : window.location.hostname === 'big-five-fantasy.vercel.app'
+      ? 'https://big-five-fantasy-production.up.railway.app/api'
+      : 'https://big-five-fantasy-test.up.railway.app/api';
 
   // API utility functions
   async function fetchAPI(endpoint) {
