@@ -1,0 +1,24 @@
+.filterRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fp {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--w);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+
+.fp.on {
+  background: #f0ecff;
+  border-color: var(--epl);
+  color: var(--epl);
+}

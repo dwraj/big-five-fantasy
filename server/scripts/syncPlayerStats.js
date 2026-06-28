@@ -46,7 +46,7 @@ async function finalizeGameweekStats(gameweekId, scoringSettings) {
 
   for (const stat of playerStats) {
     // Get player position
-    const { data: [player], error: playerError } = await supabase
+    const { data: player, error: playerError } = await supabase
       .from('players')
       .select('position')
       .eq('id', stat.player_id)
@@ -196,4 +196,13 @@ async function syncPlayerStats() {
   console.log('\n✅ Stats finalization complete');
 }
 
-syncPlayerStats().catch(console.error);
+export async function finalizeGameweek(leagueId, gameweekId) {
+  const { data: league } = await supabase
+    .from('leagues').select('scoring_settings').eq('id', leagueId).single();
+  const scoringSettings = league?.scoring_settings || getDefaultScoringSettings();
+  return finalizeGameweekStats(gameweekId, scoringSettings);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  syncPlayerStats().catch(console.error);
+}

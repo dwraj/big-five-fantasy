@@ -1,5 +1,6 @@
 import express from 'express';
 import { getSupabaseAdmin } from '../lib/supabase.js';
+import * as draftEngine from '../lib/draftEngine.js';
 
 const router = express.Router();
 const supabase = getSupabaseAdmin();
@@ -129,106 +130,14 @@ router.post('/:leagueId/pick', async (req, res) => {
       return res.status(400).json({ error: 'teamId and playerId required' });
     }
 
-    // Get current draft session
-    const { data: draft, error: draftError } = await supabase
-      .from('draft_sessions')
-      .select('*')
-      .eq('league_id', leagueId)
-      .single();
-
-    if (draftError || !draft) {
-      return res.status(404).json({ error: 'Draft not found' });
+    const result = await draftEngine.recordPick(leagueId, teamId, playerId, false);
+    if (!result.ok) {
+      const status = result.error === 'Not your turn' ? 403
+        : result.error === 'Draft not found' ? 404 : 400;
+      return res.status(status).json({ error: result.error });
     }
 
-    // Verify team is eligible to pick (check draft_order and current_pick)
-    const { data: draftOrder } = await supabase
-      .from('draft_order')
-      .select('*')
-      .eq('draft_id', draft.id)
-      .order('slot', { ascending: true });
-
-    if (!draftOrder || draftOrder.length === 0) {
-      return res.status(400).json({ error: 'No draft order found' });
-    }
-
-    // Calculate whose turn it is (snake ordering)
-    const numTeams = draftOrder.length;
-    const pickNumber = draft.current_pick;
-    const round = draft.current_round;
-
-    // Snake logic: odd rounds go 1->N, even rounds go N->1
-    let slot;
-    if (round % 2 === 1) {
-      // Odd round: forward order
-      slot = ((pickNumber - 1) % numTeams) + 1;
-    } else {
-      // Even round: reverse order
-      slot = numTeams - ((pickNumber - 1) % numTeams);
-    }
-
-    const expectedTeam = draftOrder.find(o => o.slot === slot)?.team_id;
-    if (expectedTeam !== teamId) {
-      return res.status(403).json({ error: 'Not your turn' });
-    }
-
-    // Check player not already drafted
-    const { data: existingPick } = await supabase
-      .from('draft_picks')
-      .select('id')
-      .eq('draft_id', draft.id)
-      .eq('player_id', playerId)
-      .single();
-
-    if (existingPick) {
-      return res.status(400).json({ error: 'Player already drafted' });
-    }
-
-    // Record the pick
-    const { data: pick, error: pickError } = await supabase
-      .from('draft_picks')
-      .insert({
-        draft_id: draft.id,
-        team_id: teamId,
-        player_id: playerId,
-        round,
-        pick_number: pickNumber,
-        is_auto: false,
-        picked_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (pickError) {
-      return res.status(400).json({ error: pickError.message });
-    }
-
-    // Add to roster
-    const { error: rosterError } = await supabase
-      .from('rosters')
-      .insert({
-        team_id: teamId,
-        player_id: playerId,
-        acquisition_type: 'draft'
-      });
-
-    if (rosterError && !rosterError.message.includes('duplicate')) {
-      console.error('Roster insert error:', rosterError);
-    }
-
-    // Advance to next pick
-    let nextPick = draft.current_pick + 1;
-    let nextRound = draft.current_round;
-    if (nextPick > numTeams * draft.current_round) {
-      nextRound++;
-      nextPick = numTeams * (nextRound - 1) + 1;
-    }
-
-    await supabase
-      .from('draft_sessions')
-      .update({ current_pick: nextPick, current_round: nextRound })
-      .eq('id', draft.id);
-
-    res.json({ pick, nextPick, nextRound });
+    res.json({ pick: result.pick, nextPick: result.nextPick, nextRound: result.nextRound });
   } catch (error) {
     console.error('Error recording pick:', error.message);
     res.status(500).json({ error: error.message });

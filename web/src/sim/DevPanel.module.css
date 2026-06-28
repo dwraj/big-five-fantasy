@@ -1,0 +1,37 @@
+.panel {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9999;
+  background: #111;
+  color: #fff;
+  font: 12px/1.4 system-ui;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  width: 240px;
+}
+
+.title { font-weight: 700; margin-bottom: 6px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+
+.panel button {
+  background: #2d2d2d;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.panel button:hover { background: #3d3d6d; }
+.panel button:disabled { opacity: 0.4; cursor: default; }
+
+.status {
+  opacity: 0.8;
+  border-top: 1px solid #333;
+  padding-top: 6px;
+  font-size: 11px;
+}

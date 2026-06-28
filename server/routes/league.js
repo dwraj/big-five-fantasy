@@ -25,7 +25,7 @@ router.get('/:leagueId/standings', async (req, res) => {
     const { leagueId } = req.params;
     const { data, error } = await req.supabase
       .from('teams')
-      .select('*, users(name)')
+      .select('*')
       .eq('league_id', leagueId)
       .order('total_points', { ascending: false });
 

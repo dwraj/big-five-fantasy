@@ -1,0 +1,57 @@
+.draftWrap {
+  background: var(--w);
+  border-radius: 14px;
+  border: 1px solid var(--bdr);
+  overflow: hidden;
+  animation: rise 0.5s var(--ease) forwards;
+}
+
+.draftHd {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bdr);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.draftHdTitle { font-size: 12px; font-weight: 700; color: var(--t1); }
+
+.draftLegend { display: flex; gap: 10px; font-size: 10px; color: var(--t2); align-items: center; }
+.dlSwatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
+
+.scroll { overflow-x: auto; }
+
+.draftTbl { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+
+.draftTbl th {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--t3);
+  font-weight: 700;
+  padding: 8px 5px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: center;
+}
+
+.draftTbl td {
+  padding: 7px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--t2);
+}
+
+.draftTbl tr:last-child td { border-bottom: none; }
+.mine { background: #f0ecff; color: var(--epl); font-weight: 700; }
+.auto { background: #FEF3C7; color: #D97706; font-weight: 600; }
+.rl { font-size: 9px; color: var(--t3); font-weight: 700; text-align: left; padding-left: 12px; }
+.themeCol { color: var(--epl); }
+
+.footnote { padding: 8px 14px; font-size: 10px; color: var(--t3); }
+
+.available { margin-top: 12px; padding: 0 2px; }
+.availableTitle { font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--epl); }
+.waiting { color: var(--t3); font-size: 12px; padding: 8px 0; }
+.availList { display: flex; flex-direction: column; gap: 6px; }

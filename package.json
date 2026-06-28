@@ -6,6 +6,7 @@
   "main": "server/index.js",
   "scripts": {
     "dev": "node --watch server/index.js",
+    "dev:local": "bash scripts/dev-local.sh",
     "start": "node server/index.js",
     "setup:db": "node server/scripts/setupDb.js",
     "init:schema": "node server/scripts/executeSchema.js",
@@ -16,6 +17,10 @@
     "sync:stats": "node server/scripts/syncPlayerStats.js",
     "sync:injuries": "node server/scripts/syncInjuries.js",
     "process:waivers": "node server/scripts/processWaivers.js",
+    "fb4-test": "bash scripts/fb4-test.sh",
+    "web:dev": "npm run dev --prefix web",
+    "web:install": "npm install --prefix web",
+    "build": "npm install --prefix web && npm run build --prefix web",
     "git:add": "git add .",
     "git:commit": "git commit -m",
     "git:push": "git push origin main"

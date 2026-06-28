@@ -1,0 +1,55 @@
+.waRow {
+  background: var(--w);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  animation: rise 0.45s var(--ease) forwards;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s;
+}
+
+.waRow:hover { transform: translateX(3px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07); }
+
+.badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--w);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.waInfo { flex: 1; }
+.waName { font-size: 13px; font-weight: 700; color: var(--t1); }
+.waMeta { font-size: 10.5px; color: var(--t2); }
+
+.waAvg { text-align: right; margin-right: 8px; }
+.waAvgVal { font-size: 16px; font-weight: 900; color: var(--t1); }
+.waAvgLbl { font-size: 9px; color: var(--t3); }
+
+.btnClaim {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--epl);
+  color: var(--w);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring), box-shadow 0.15s;
+  flex-shrink: 0;
+}
+
+.btnClaim:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3); }
+.btnClaim:disabled { background: var(--t3); cursor: default; transform: none; box-shadow: none; }
+
+.hdr { display: flex; justify-content: space-between; align-items: center; }
+.hdrTitle { font-size: 14px; font-weight: 700; color: var(--t1); }
+.hdrSub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.hdrPending { background: #f0ecff; color: var(--epl); padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; }

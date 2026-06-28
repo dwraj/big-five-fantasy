@@ -51,7 +51,7 @@ Create `.env.local`:
 ```
 VITE_SUPABASE_URL=https://erkwiyftgyclqctykiad.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-key>
-VITE_API_FOOTBALL_KEY=a4c24a07221cb0cd395292f18e96ce50
+VITE_API_FOOTBALL_KEY=<your-api-football-key>
 ```
 
 ## Project Structure

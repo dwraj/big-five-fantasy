@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big Five Fantasy</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+/* ── Core tokens ── */
+:root {
+  --bg:  #EDEAE3;
+  --w:   #FFFFFF;
+  --t1:  #0D0D0D;
+  --t2:  #777777;
+  --t3:  #BBBBBB;
+  --bdr: rgba(0,0,0,0.07);
+  --epl: #6D28D9;
+  --ll:  #DC2626;
+  --sa:  #1D4ED8;
+  --bl:  #D97706;
+  --l1:  #059669;
+  --font: -apple-system,'SF Pro Display','Helvetica Neue',sans-serif;
+  --spring: cubic-bezier(0.34,1.56,0.64,1);
+  --ease:   cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ── Animations ── */
+@keyframes rise {
+  from { opacity:0; transform:translateY(26px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0)    scale(1);    }
+}
+@keyframes springPop {
+  0%   { opacity:0; transform:scale(0.88); }
+  60%  {            transform:scale(1.05); }
+  100% { opacity:1; transform:scale(1);    }
+}
+@keyframes slideRight {
+  from { opacity:0; transform:translateX(28px); }
+  to   { opacity:1; transform:translateX(0);    }
+}
+@keyframes pip {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.15; }
+}
+
+/* ── Reset ── */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:var(--font); background:#D5D2CA;
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding:28px 20px 48px;
+}
+
+/* ── Outer tab bar ── */
+#outer-tabs {
+  display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; justify-content:center;
+}
+.otab {
+  padding:5px 14px; border-radius:20px; font-size:11px; font-weight:600;
+  background:#fff; border:1px solid rgba(0,0,0,0.12); color:#777;
+  cursor:pointer; transition:all .15s; font-family:var(--font);
+}
+.otab.on { background:#f0ecff; border-color:var(--epl); color:var(--epl); }
+
+/* ── Shell ── */
+.shell {
+  display:flex; height:640px; border-radius:20px; overflow:hidden;
+  border:1px solid rgba(0,0,0,0.09);
+  box-shadow:0 24px 60px rgba(0,0,0,0.13),0 4px 16px rgba(0,0,0,0.06);
+  width:100%; max-width:1060px;
+}
+
+/* ── Sidebar ── */
+.sb {
+  width:236px; flex-shrink:0; background:#fff;
+  border-right:1px solid rgba(0,0,0,0.07);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.sb-top {
+  padding:18px 16px 14px; border-bottom:1px solid rgba(0,0,0,0.06); flex-shrink:0;
+}
+.sb-logo { font-size:15px; font-weight:800; color:var(--t1); letter-spacing:-.3px; }
+.sb-sub  { font-size:11px; color:var(--t3); margin-top:2px; }
+
+.nav { padding:8px; flex-shrink:0; }
+.ni {
+  display:flex; align-items:center; gap:9px; padding:9px 10px;
+  border-radius:9px; cursor:pointer; font-size:13px; color:#999;
+  margin-bottom:1px; position:relative; font-weight:500;
+  transition:background .12s, color .12s;
+}
+.ni i { font-size:16px; }
+.ni:hover { background:#f5f3ff; color:var(--epl); }
+.ni.active { background:#f0ecff; color:var(--epl); font-weight:700; }
+.ni.active::before {
+  content:''; position:absolute; left:0; top:6px; bottom:6px;
+  width:3px; border-radius:0 2px 2px 0;
+  background:linear-gradient(180deg,#6D28D9,#2563EB);
+}
+
+/* On Now */
+.on-now { flex:1; overflow-y:auto; border-top:1px solid rgba(0,0,0,0.06); padding:8px; }
+.on-now::-webkit-scrollbar { width:0; }
+.on-now-label {
+  font-size:9.5px; font-weight:700; color:var(--t3);
+  text-transform:uppercase; letter-spacing:.8px; padding:4px 6px 8px;
+}
+.lb { margin-bottom:4px; border-radius:10px; overflow:hidden; border:1px solid rgba(0,0,0,0.06); }
+.lb-h {
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
+  cursor:pointer; background:#fafafa; transition:background .12s;
+}
+.lb-h:hover { background:#f3f3f3; }
+.lb-color {
+  width:20px; height:20px; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:11px; flex-shrink:0;
+}
+.lb-name { font-size:11.5px; font-weight:600; color:var(--t1); flex:1; }
+.lb-chev { font-size:12px; color:var(--t3); transition:transform .2s; }
+.lb-chev.open { transform:rotate(90deg); }
+.lb-players { display:none; background:#fff; }
+.lb-players.open { display:block; }
+.lp { display:flex; align-items:center; gap:8px; padding:7px 10px; border-top:1px solid rgba(0,0,0,0.04); }
+.lp-pip { width:6px; height:6px; border-radius:50%; background:#16a34a; flex-shrink:0; animation:pip 1.4s ease-in-out infinite; }
+.lp-pip.done { background:var(--t3); animation:none; }
+.lp-body { flex:1; min-width:0; }
+.lp-n { font-size:11px; font-weight:600; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lp-match { font-size:10px; color:var(--t2); }
+.score-em { color:#555; font-weight:800; }
+.live-min { color:#16a34a; font-weight:700; }
+.done-label { color:var(--t3); }
+.lp-pts { font-size:12px; font-weight:800; color:var(--t1); flex-shrink:0; }
+
+/* Sidebar footer */
+.sb-foot {
+  padding:10px 12px; border-top:1px solid rgba(0,0,0,0.07);
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+}
+.sb-avatar {
+  width:30px; height:30px; border-radius:50%;
+  background:linear-gradient(135deg,#6D28D9,#2563EB);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:12px; font-weight:700; flex-shrink:0;
+}
+.sb-user { flex:1; }
+.sb-name { font-size:12px; font-weight:700; color:var(--t1); }
+.sb-team { font-size:10px; color:var(--t3); }
+.sb-gear { font-size:16px; color:var(--t3); cursor:pointer; transition:color .12s; }
+.sb-gear:hover { color:var(--t2); }
+
+/* ── Main ── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+
+.topbar {
+  height:52px; background:rgba(237,234,227,0.92);
+  backdrop-filter:blur(16px); border-bottom:1px solid rgba(0,0,0,0.07);
+  display:flex; align-items:center; padding:0 20px; gap:10px; flex-shrink:0;
+}
+.topbar-title { font-size:14px; font-weight:700; color:var(--t1); flex:1; }
+.live-chip {
+  display:flex; align-items:center; gap:5px;
+  background:#dcfce7; border:1px solid #bbf7d0; color:#15803d;
+  padding:3px 9px; border-radius:20px; font-size:9.5px; font-weight:800;
+}
+.live-dot { width:5px; height:5px; border-radius:50%; background:#16a34a; animation:pip 1.4s ease-in-out infinite; }
+.gw-chip { background:#0D0D0D; color:#fff; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:800; }
+
+.content {
+  flex:1; overflow-y:auto; padding:16px 18px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.content::-webkit-scrollbar { width:0; }
+
+.screen { display:none; flex-direction:column; gap:14px; }
+.screen.visible { display:flex; }
+
+/* ── Shared layout helpers ── */
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.section-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:2px; margin-bottom:2px;
+}
+.section-hd-lbl { font-size:11px; font-weight:700; color:var(--t2); text-transform:uppercase; letter-spacing:.6px; }
+.section-hd-ct  { font-size:11px; color:var(--t3); }
+
+/* ── Stat card ── */
+.stat-c {
+  background:var(--w); border-radius:14px; border:1px solid var(--bdr);
+  padding:14px 16px; position:relative; overflow:hidden;
+  opacity:0; animation:rise .5s var(--ease) forwards;
+  transition:transform .22s var(--spring), box-shadow .22s;
+}
+.stat-c:hover { transform:translateY(-5px) scale(1.02); box-shadow:0 12px 28px rgba(0,0,0,.11); }
+.stat-bg { position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; opacity:.06; }
+.stat-lbl { font-size:9.5px; font-weight:700; text-transform:uppercase; color:var(--t3); letter-spacing:.8px; margin-bottom:6px; }
+.stat-val { font-size:32px; font-weight:900; letter-spacing:-2px; color:var(--t1); line-height:1; }
+.stat-chg { font-size:11px; font-weight:600; margin-top:5px; }
+.stat-chg.up { color:#16a34a; }
+.stat-chg.dn { color:#dc2626; }
+.stat-chg.nu { color:var(--t3); }
+
+/* ── Matchup hero ── */
+.mh {
+  background:var(--w); border-radius:14px; border:1px solid var(--bdr); overflow:hidden;
+  opacity:0; animation:rise .5s var(--ease) .1s forwards;
+}
+.mh-inner { display:flex; align-items:stretch; min-height:110px; }
+.mh-team   { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:16px; }
+.mh-team.l { background:rgba(109,40,217,.05); }
+.mh-team.r { background:rgba(220,38,38,.05); }
+.mh-crest  {
+  width:42px; height:42px; border-radius:12px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:14px; font-weight:800;
+  transition:transform .25s var(--spring);
+}
+.mh:hover .mh-crest { transform:scale(1.1); }
+.mh-tname  { font-size:12px; font-weight:700; color:var(--t1); text-align:center; }
+.mh-tlbl   { font-size:10px; color:var(--t3); }
+.mh-center { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 24px; gap:4px; }
+.mh-nums   { display:flex; align-items:center; gap:10px; }
+.mh-score  { font-size:46px; font-weight:900; letter-spacing:-3px; color:var(--t1); line-height:1; }
+.mh-score.losing { color:#e5e5e5; }
+.mh-dash   { font-size:30px; font-weight:300; color:var(--t3); }
+.mh-tag    { font-size:10px; color:var(--t2); font-weight:600; }
+
+/* ── Trading card ── */
+.tc-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.tc {
+  background:var(--w); border-radius:14px; border:1px solid var(--bdr);
+  overflow:hidden; position:relative; cursor:pointer;
+  opacity:0; animation:springPop .55s var(--spring) forwards;
+  transition:transform .22s var(--spring), box-shadow .22s;
+}
+.tc:hover { transform:translateY(-8px) scale(1.02); box-shadow:0 18px 40px rgba(0,0,0,.13); }
+.tc-top  { padding:14px 12px 10px; position:relative; }
+.tc-badge {
+  display:inline-block; padding:3px 7px; border-radius:6px;
+  font-size:10px; font-weight:800; color:#fff; letter-spacing:.3px;
+}
+.tc-pts   { position:absolute; top:12px; right:12px; font-size:30px; font-weight:900; letter-spacing:-2px; line-height:1; }
+.tc-league { display:inline-block; margin-top:8px; padding:2px 8px; border-radius:20px; font-size:9.5px; font-weight:700; }
+.tc-bot    { padding:10px 12px 40px; }
+.tc-name   { font-size:13px; font-weight:800; color:var(--t1); }
+.tc-meta   { font-size:10.5px; color:var(--t2); margin-top:1px; }
+.tc-total  { font-size:10px; color:var(--t3); margin-top:4px; }
+.tc-reveal {
+  position:absolute; bottom:0; left:0; right:0;
+  background:#fff; border-top:1px solid rgba(0,0,0,.06);
+  transform:translateY(100%); transition:transform .3s var(--spring);
+  padding:10px 12px;
+}
+.tc:hover .tc-reveal { transform:translateY(0); }
+.reveal-title { font-size:9px; font-weight:700; text-transform:uppercase; color:var(--t3); letter-spacing:.8px; margin-bottom:6px; }
+.reveal-stats { display:flex; gap:12px; }
+.rv-val { font-size:16px; font-weight:900; color:var(--t1); }
+.rv-lbl { font-size:9px; color:var(--t3); }
+.reveal-bonus { margin-top:5px; font-size:10px; font-weight:700; color:#16a34a; }
+
+/* ── Roster row ── */
+.rr {
+  background:var(--w); border-radius:12px; border:1px solid rgba(0,0,0,.06);
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; gap:10px; padding:10px 12px 10px 16px;
+  opacity:0; animation:rise .45s var(--ease) forwards;
+  transition:transform .2s var(--spring), box-shadow .2s; cursor:pointer;
+}
+.rr:hover { transform:translateX(5px); box-shadow:0 5px 16px rgba(0,0,0,.09); }
+.rr::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+.rr.epl::before { background:var(--epl); }
+.rr.la::before  { background:var(--ll);  }
+.rr.sa::before  { background:var(--sa);  }
+.rr.bl::before  { background:var(--bl);  }
+.rr.l1::before  { background:var(--l1);  }
+.rr-badge {
+  width:32px; height:32px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:9px; font-weight:800;
+  transition:transform .2s var(--spring);
+}
+.rr:hover .rr-badge { transform:scale(1.12); }
+.rr-info   { flex:1; min-width:0; }
+.rr-name   { font-size:13px; font-weight:700; color:var(--t1); }
+.rr-meta   { font-size:10.5px; color:var(--t2); }
+.rr-detail {
+  font-size:10px; color:#16a34a; font-weight:600;
+  max-height:0; overflow:hidden; opacity:0;
+  transition:max-height .25s ease, opacity .2s;
+}
+.rr:hover .rr-detail { max-height:20px; opacity:1; }
+.rr-tag { padding:3px 8px; border-radius:20px; font-size:9.5px; font-weight:700; flex-shrink:0; }
+.rr-tag.s { background:#0D0D0D; color:#fff; }
+.rr-tag.b { background:#f0f0f0; color:#999; }
+.rr-pts { text-align:right; flex-shrink:0; }
+.rr-gw  { font-size:15px; font-weight:900; color:var(--t1); letter-spacing:-.5px; }
+.rr-tot { font-size:9.5px; color:var(--t3); }
+
+/* ── Standings ── */
+.st-wrap {
+  background:var(--w); border-radius:14px; border:1px solid var(--bdr); overflow:hidden;
+  opacity:0; animation:rise .5s var(--ease) forwards;
+}
+.st-head { display:flex; align-items:center; padding:10px 14px; border-bottom:1px solid var(--bdr); }
+.st-hc        { font-size:9.5px; font-weight:700; text-transform:uppercase; color:var(--t3); letter-spacing:.8px; }
+.st-hc.rank   { width:28px; }
+.st-hc.name   { flex:1; }
+.st-hc.num    { width:50px; text-align:right; }
+.sr {
+  display:flex; align-items:center; padding:10px 14px;
+  border-bottom:1px solid rgba(0,0,0,.04); cursor:pointer;
+  transition:background .12s;
+}
+.sr:last-child { border-bottom:none; }
+.sr:hover { background:#fafafa; }
+.sr.me    { background:#f8f5ff; }
+.sr-rank  { width:28px; font-size:13px; font-weight:700; color:var(--t2); }
+.sr-rank.top { color:var(--t1); }
+.sr-avatar {
+  width:26px; height:26px; border-radius:8px; margin-right:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; font-weight:800; color:#fff;
+}
+.sr-info  { flex:1; }
+.sr-name  { font-size:12.5px; font-weight:600; color:var(--t1); }
+.sr-sub   { font-size:10px; color:var(--t3); }
+.sr-gw {
+  opacity:0; transform:translateX(-6px);
+  transition:opacity .18s, transform .18s;
+  background:#f0f0f0; border-radius:20px; padding:2px 7px;
+  font-size:10px; font-weight:700; color:var(--t2); margin-right:6px;
+}
+.sr:hover .sr-gw { opacity:1; transform:translateX(0); }
+.sr-rec { width:42px; text-align:right; font-size:11px; color:var(--t2); }
+.sr-pts { width:52px; text-align:right; font-size:13px; font-weight:800; color:var(--t1); }
+
+/* ── Waiver row ── */
+.wa-row {
+  background:var(--w); border-radius:12px; border:1px solid rgba(0,0,0,.06);
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  opacity:0; animation:rise .45s var(--ease) forwards;
+  transition:transform .2s var(--spring), box-shadow .2s;
+}
+.wa-row:hover { transform:translateX(3px); box-shadow:0 4px 12px rgba(0,0,0,.07); }
+.wa-info { flex:1; }
+.wa-name { font-size:13px; font-weight:700; color:var(--t1); }
+.wa-meta { font-size:10.5px; color:var(--t2); }
+.wa-avg  { text-align:right; margin-right:8px; }
+.wa-avg-val { font-size:16px; font-weight:900; color:var(--t1); }
+.wa-avg-lbl { font-size:9px; color:var(--t3); }
+.btn-claim {
+  padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700;
+  background:var(--epl); color:#fff; border:none; cursor:pointer;
+  transition:transform .15s var(--spring), box-shadow .15s; flex-shrink:0;
+}
+.btn-claim:hover { transform:scale(1.05); box-shadow:0 4px 12px rgba(109,40,217,.3); }
+.btn-claim:disabled { background:var(--t3); cursor:default; transform:none; box-shadow:none; }
+
+/* filter pills */
+.filter-row { display:flex; gap:6px; flex-wrap:wrap; }
+.fp {
+  padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600;
+  background:var(--w); border:1px solid rgba(0,0,0,.1); color:var(--t2);
+  cursor:pointer; transition:all .15s; font-family:var(--font);
+}
+.fp.on { background:#f0ecff; border-color:var(--epl); color:var(--epl); }
+
+/* ── Trade card ── */
+.trade-c {
+  background:var(--w); border-radius:14px; border:1px solid var(--bdr); padding:14px;
+  opacity:0; animation:rise .5s var(--ease) forwards;
+}
+.trade-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.trade-from { font-size:11px; font-weight:600; color:var(--t2); }
+.trade-tag  { font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:20px; }
+.trade-tag.pending { background:#FEF3C7; color:#D97706; }
+.trade-body { display:flex; align-items:center; gap:10px; }
+.trade-side { flex:1; padding:10px; border-radius:10px; background:var(--bg); }
+.trade-side-lbl { font-size:9px; text-transform:uppercase; letter-spacing:.8px; font-weight:700; color:var(--t3); margin-bottom:4px; }
+.trade-pname { font-size:13px; font-weight:700; color:var(--t1); }
+.trade-pmeta { font-size:10px; color:var(--t2); }
+.trade-arrow { font-size:18px; color:var(--t3); flex-shrink:0; }
+.trade-acts  { display:flex; gap:6px; margin-top:12px; justify-content:flex-end; }
+.btn-reject {
+  padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700;
+  background:#fff; color:#DC2626; border:1px solid #FECACA; cursor:pointer;
+  transition:background .15s;
+}
+.btn-reject:hover { background:#FEF2F2; }
+.btn-accept {
+  padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700;
+  background:#16a34a; color:#fff; border:none; cursor:pointer;
+  transition:transform .15s var(--spring);
+}
+.btn-accept:hover { transform:scale(1.05); }
+
+/* ── Draft board ── */
+.draft-wrap {
+  background:var(--w); border-radius:14px; border:1px solid var(--bdr); overflow:hidden;
+  opacity:0; animation:rise .5s var(--ease) forwards;
+}
+.draft-legend { display:flex; gap:10px; font-size:10px; color:var(--t2); align-items:center; }
+.dl-swatch { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+.draft-tbl { width:100%; border-collapse:collapse; font-size:10.5px; }
+.draft-tbl th {
+  font-size:9px; text-transform:uppercase; letter-spacing:.8px;
+  color:var(--t3); font-weight:700; padding:8px 5px;
+  border-bottom:1px solid var(--bdr); text-align:center;
+}
+.draft-tbl td {
+  padding:7px 4px; border-bottom:1px solid rgba(0,0,0,.04);
+  text-align:center; font-size:10px; line-height:1.35; color:var(--t2);
+}
+.draft-tbl tr:last-child td { border-bottom:none; }
+.draft-tbl td.mine { background:#f0ecff; color:var(--epl); font-weight:700; }
+.draft-tbl td.auto { background:#FEF3C7; color:#D97706; font-weight:600; }
+.draft-tbl td.rl   { font-size:9px; color:var(--t3); font-weight:700; text-align:left; padding-left:12px; }
+
+/* past trades list */
+.past-trade { padding:10px 14px; border-bottom:1px solid rgba(0,0,0,.04); font-size:12px; color:var(--t2); }
+.past-trade:last-child { border-bottom:none; }
+</style>
+</head>
+<body>
+
+<!-- Screen switcher tabs -->
+<div id="outer-tabs">
+  <button class="otab on" onclick="switchTo('dashboard',this)">Dashboard</button>
+  <button class="otab"    onclick="switchTo('myteam',this)">My Team</button>
+  <button class="otab"    onclick="switchTo('standings',this)">Standings</button>
+  <button class="otab"    onclick="switchTo('matchup',this)">Matchup</button>
+  <button class="otab"    onclick="switchTo('waivers',this)">Waivers</button>
+  <button class="otab"    onclick="switchTo('trades',this)">Trades</button>
+  <button class="otab"    onclick="switchTo('draft',this)">Draft</button>
+</div>
+
+<div class="shell">
+
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <div class="sb">
+    <div class="sb-top">
+      <div class="sb-logo">Big Five Fantasy</div>
+      <div class="sb-sub">Trident FC · 2025–26</div>
+    </div>
+
+    <div class="nav">
+      <div class="ni active" id="ni-dashboard" onclick="showScreen('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="ni"        id="ni-myteam"    onclick="showScreen('myteam',this)">   <i class="ti ti-shirt"></i> My Team</div>
+      <div class="ni"        id="ni-standings" onclick="showScreen('standings',this)"> <i class="ti ti-trophy"></i> Standings</div>
+      <div class="ni"        id="ni-matchup"   onclick="showScreen('matchup',this)">   <i class="ti ti-arrows-exchange"></i> Matchup</div>
+      <div class="ni"        id="ni-waivers"   onclick="showScreen('waivers',this)">   <i class="ti ti-user-search"></i> Waivers</div>
+      <div class="ni"        id="ni-trades"    onclick="showScreen('trades',this)">    <i class="ti ti-list-check"></i> Trades</div>
+      <div class="ni"        id="ni-draft"     onclick="showScreen('draft',this)">     <i class="ti ti-ball-football"></i> Draft</div>
+    </div>
+
+    <div class="on-now">
+      <div class="on-now-label">On Now</div>
+
+      <!-- EPL — expanded -->
+      <div class="lb">
+        <div class="lb-h" onclick="toggleLg('epl',this)">
+          <div class="lb-color" style="background:#6D28D9"><i class="ti ti-ball-football"></i></div>
+          <span class="lb-name">Premier League</span>
+          <i class="ti ti-chevron-right lb-chev open"></i>
+        </div>
+        <div class="lb-players open" id="lg-epl">
+          <div class="lp"><div class="lp-pip"></div><div class="lp-body"><div class="lp-n">M. Salah</div><div class="lp-match">LIV <span class="score-em">2–1</span> MCI · <span class="live-min">67'</span></div></div><div class="lp-pts">18</div></div>
+          <div class="lp"><div class="lp-pip"></div><div class="lp-body"><div class="lp-n">T. Alexander-Arnold</div><div class="lp-match">LIV <span class="score-em">2–1</span> MCI · <span class="live-min">67'</span></div></div><div class="lp-pts">9</div></div>
+          <div class="lp"><div class="lp-pip done"></div><div class="lp-body"><div class="lp-n">R. Dias</div><div class="lp-match">ARS <span class="score-em">1–0</span> CHE · <span class="done-label">FT</span></div></div><div class="lp-pts">6</div></div>
+        </div>
+      </div>
+
+      <!-- La Liga — collapsed -->
+      <div class="lb">
+        <div class="lb-h" onclick="toggleLg('ll',this)">
+          <div class="lb-color" style="background:#DC2626"><i class="ti ti-ball-football"></i></div>
+          <span class="lb-name">La Liga</span>
+          <i class="ti ti-chevron-right lb-chev"></i>
+        </div>
+        <div class="lb-players" id="lg-ll">
+          <div class="lp"><div class="lp-pip"></div><div class="lp-body"><div class="lp-n">Vinícius Jr.</div><div class="lp-match">RMA <span class="score-em">3–0</span> BAR · <span class="live-min">52'</span></div></div><div class="lp-pts">14</div></div>
+          <div class="lp"><div class="lp-pip"></div><div class="lp-body"><div class="lp-n">K. Mbappé</div><div class="lp-match">RMA <span class="score-em">3–0</span> BAR · <span class="live-min">52'</span></div></div><div class="lp-pts">7</div></div>
+        </div>
+      </div>
+
+      <!-- Serie A — collapsed -->
+      <div class="lb">
+        <div class="lb-h" onclick="toggleLg('sa',this)">
+          <div class="lb-color" style="background:#1D4ED8"><i class="ti ti-ball-football"></i></div>
+          <span class="lb-name">Serie A</span>
+          <i class="ti ti-chevron-right lb-chev"></i>
+        </div>
+        <div class="lb-players" id="lg-sa">
+          <div class="lp"><div class="lp-pip done"></div><div class="lp-body"><div class="lp-n">A. Onana</div><div class="lp-match">INT <span class="score-em">2–0</span> JUV · <span class="done-label">FT</span></div></div><div class="lp-pts">11</div></div>
+        </div>
+      </div>
+
+      <!-- Bundesliga — collapsed -->
+      <div class="lb">
+        <div class="lb-h" onclick="toggleLg('bl',this)">
+          <div class="lb-color" style="background:#D97706"><i class="ti ti-ball-football"></i></div>
+          <span class="lb-name">Bundesliga</span>
+          <i class="ti ti-chevron-right lb-chev"></i>
+        </div>
+        <div class="lb-players" id="lg-bl">
+          <div class="lp"><div class="lp-pip done"></div><div class="lp-body"><div class="lp-n">L. Goretzka</div><div class="lp-match">BAY <span class="score-em">4–1</span> BVB · <span class="done-label">FT</span></div></div><div class="lp-pts">3</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-foot">
+      <div class="sb-avatar">D</div>
+      <div class="sb-user">
+        <div class="sb-name">Dhinesh</div>
+        <div class="sb-team">Trident FC · 3rd place</div>
+      </div>
+      <i class="ti ti-settings sb-gear"></i>
+    </div>
+  </div>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <div class="live-chip"><div class="live-dot"></div> Live</div>
+      <div class="gw-chip">GW 28</div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="screen visible" id="screen-dashboard">
+        <div class="row3">
+          <div class="stat-c" style="animation-delay:.00s">
+            <div class="stat-bg" style="background:#6D28D9"></div>
+            <div class="stat-lbl">Gameweek pts</div>
+            <div class="stat-val" id="v-gw">0</div>
+            <div class="stat-chg up">↑ 12 vs last week</div>
+          </div>
+          <div class="stat-c" style="animation-delay:.055s">
+            <div class="stat-bg" style="background:#0D0D0D"></div>
+            <div class="stat-lbl">Season record</div>
+            <div class="stat-val" style="font-size:22px;letter-spacing:-1px;margin-top:2px">16W–11L</div>
+            <div class="stat-chg nu">3rd of 8 teams</div>
+          </div>
+          <div class="stat-c" style="animation-delay:.11s">
+            <div class="stat-bg" style="background:#16a34a"></div>
+            <div class="stat-lbl">Season total</div>
+            <div class="stat-val" id="v-total">0</div>
+            <div class="stat-chg up">↑ 79 ahead of 4th</div>
+          </div>
+        </div>
+
+        <div class="mh">
+          <div class="mh-inner">
+            <div class="mh-team l">
+              <div class="mh-crest" style="background:linear-gradient(135deg,#6D28D9,#2563EB)">TF</div>
+              <div class="mh-tname">Trident FC</div>
+              <div class="mh-tlbl">You</div>
+            </div>
+            <div class="mh-center">
+              <div class="mh-nums">
+                <div class="mh-score" id="v-match">0</div>
+                <div class="mh-dash">–</div>
+                <div class="mh-score losing">58</div>
+              </div>
+              <div class="mh-tag"><span style="color:#16a34a">⚡ Live</span> · GW28 · +4 lead</div>
+            </div>
+            <div class="mh-team r">
+              <div class="mh-crest" style="background:linear-gradient(135deg,#DC2626,#991b1b)">GX</div>
+              <div class="mh-tname">Galaxy XI</div>
+              <div class="mh-tlbl">Sam R.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-hd">
+          <span class="section-hd-lbl">Top Starters</span>
+          <span class="section-hd-ct">GW28 · hover for stats</span>
+        </div>
+        <div class="tc-row">
+          <div class="tc" style="animation-delay:.17s">
+            <div class="tc-top" style="background:rgba(109,40,217,.07)">
+              <div class="tc-badge" style="background:#C8102E">LIV</div>
+              <div class="tc-pts" style="color:#6D28D9">18</div>
+              <div class="tc-league" style="background:rgba(109,40,217,.12);color:#6D28D9">Premier League</div>
+            </div>
+            <div class="tc-bot">
+              <div class="tc-name">M. Salah</div>
+              <div class="tc-meta">FWD · Liverpool</div>
+              <div class="tc-total">187 pts total</div>
+            </div>
+            <div class="tc-reveal">
+              <div class="reveal-title">This gameweek</div>
+              <div class="reveal-stats">
+                <div class="rv"><div class="rv-val">1</div><div class="rv-lbl">Goal</div></div>
+                <div class="rv"><div class="rv-val">2</div><div class="rv-lbl">Assists</div></div>
+                <div class="rv"><div class="rv-val">90</div><div class="rv-lbl">Mins</div></div>
+              </div>
+              <div class="reveal-bonus">+3 bonus pts</div>
+            </div>
+          </div>
+          <div class="tc" style="animation-delay:.225s">
+            <div class="tc-top" style="background:rgba(220,38,38,.07)">
+              <div class="tc-badge" style="background:#FEBE10;color:#00529F">RMA</div>
+              <div class="tc-pts" style="color:#DC2626">14</div>
+              <div class="tc-league" style="background:rgba(220,38,38,.12);color:#DC2626">La Liga</div>
+            </div>
+            <div class="tc-bot">
+              <div class="tc-name">Vinícius Jr.</div>
+              <div class="tc-meta">FWD · Real Madrid</div>
+              <div class="tc-total">162 pts total</div>
+            </div>
+            <div class="tc-reveal">
+              <div class="reveal-title">This gameweek</div>
+              <div class="reveal-stats">
+                <div class="rv"><div class="rv-val">1</div><div class="rv-lbl">Goal</div></div>
+                <div class="rv"><div class="rv-val">1</div><div class="rv-lbl">Assist</div></div>
+                <div class="rv"><div class="rv-val">85</div><div class="rv-lbl">Mins</div></div>
+              </div>
+              <div class="reveal-bonus">+2 bonus pts</div>
+            </div>
+          </div>
+          <div class="tc" style="animation-delay:.28s">
+            <div class="tc-top" style="background:rgba(29,78,216,.07)">
+              <div class="tc-badge" style="background:#0068A8">INT</div>
+              <div class="tc-pts" style="color:#1D4ED8">11</div>
+              <div class="tc-league" style="background:rgba(29,78,216,.12);color:#1D4ED8">Serie A</div>
+            </div>
+            <div class="tc-bot">
+              <div class="tc-name">A. Onana</div>
+              <div class="tc-meta">GK · Inter Milan</div>
+              <div class="tc-total">134 pts total</div>
+            </div>
+            <div class="tc-reveal">
+              <div class="reveal-title">This gameweek</div>
+              <div class="reveal-stats">
+                <div class="rv"><div class="rv-val">5</div><div class="rv-lbl">Saves</div></div>
+                <div class="rv"><div class="rv-val">1</div><div class="rv-lbl">CS</div></div>
+                <div class="rv"><div class="rv-val">90</div><div class="rv-lbl">Mins</div></div>
+              </div>
+              <div class="reveal-bonus">+1 bonus pt</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MY TEAM ── -->
+      <div class="screen" id="screen-myteam">
+        <div class="filter-row">
+          <div class="fp on">All</div>
+          <div class="fp">Starters</div>
+          <div class="fp">Bench</div>
+          <div class="fp">By League</div>
+        </div>
+        <div class="section-hd"><span class="section-hd-lbl">Starters</span><span class="section-hd-ct">6 / 6</span></div>
+        <div class="rr epl" style="animation-delay:.00s"><div class="rr-badge" style="background:#C8102E">LIV</div><div class="rr-info"><div class="rr-name">M. Salah</div><div class="rr-meta">FWD · Liverpool · Premier League</div><div class="rr-detail">1 goal · 2 assists · 90 mins</div></div><span class="rr-tag s">Starter</span><div class="rr-pts"><div class="rr-gw">18</div><div class="rr-tot">187 total</div></div></div>
+        <div class="rr la"  style="animation-delay:.055s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="rr-info"><div class="rr-name">Vinícius Jr.</div><div class="rr-meta">FWD · Real Madrid · La Liga</div><div class="rr-detail">1 goal · 1 assist · 85 mins</div></div><span class="rr-tag s">Starter</span><div class="rr-pts"><div class="rr-gw">14</div><div class="rr-tot">162 total</div></div></div>
+        <div class="rr sa"  style="animation-delay:.11s"><div class="rr-badge" style="background:#0068A8">INT</div><div class="rr-info"><div class="rr-name">A. Onana</div><div class="rr-meta">GK · Inter Milan · Serie A</div><div class="rr-detail">5 saves · clean sheet · 90 mins</div></div><span class="rr-tag s">Starter</span><div class="rr-pts"><div class="rr-gw">11</div><div class="rr-tot">134 total</div></div></div>
+        <div class="rr epl" style="animation-delay:.165s"><div class="rr-badge" style="background:#C8102E">LIV</div><div class="rr-info"><div class="rr-name">T. Alexander-Arnold</div><div class="rr-meta">DEF · Liverpool · Premier League</div><div class="rr-detail">1 assist · clean sheet · 90 mins</div></div><span class="rr-tag s">Starter</span><div class="rr-pts"><div class="rr-gw">9</div><div class="rr-tot">121 total</div></div></div>
+        <div class="rr la"  style="animation-delay:.22s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="rr-info"><div class="rr-name">K. Mbappé</div><div class="rr-meta">FWD · Real Madrid · La Liga</div><div class="rr-detail">1 goal · 85 mins played</div></div><span class="rr-tag s">Starter</span><div class="rr-pts"><div class="rr-gw">7</div><div class="rr-tot">118 total</div></div></div>
+        <div class="rr bl"  style="animation-delay:.275s"><div class="rr-badge" style="background:#DC052D">BAY</div><div class="rr-info"><div class="rr-name">L. Goretzka</div><div class="rr-meta">MID · Bayern Munich · Bundesliga</div><div class="rr-detail">Bayern match completed · 3 pts</div></div><span class="rr-tag s">Starter</span><div class="rr-pts"><div class="rr-gw">3</div><div class="rr-tot">102 total</div></div></div>
+        <div class="section-hd" style="margin-top:6px;"><span class="section-hd-lbl">Bench</span><span class="section-hd-ct">Score 0 this GW</span></div>
+        <div class="rr epl" style="animation-delay:.33s"><div class="rr-badge" style="background:#6CABDD">MCI</div><div class="rr-info"><div class="rr-name">R. Dias</div><div class="rr-meta">DEF · Man City · Premier League</div><div class="rr-detail">Clean sheet · 90 mins played</div></div><span class="rr-tag b">Bench</span><div class="rr-pts"><div class="rr-gw">—</div><div class="rr-tot">98 total</div></div></div>
+        <div class="rr epl" style="animation-delay:.385s"><div class="rr-badge" style="background:#DA291C">MUN</div><div class="rr-info"><div class="rr-name">B. Fernandes</div><div class="rr-meta">MID · Man Utd · Premier League</div><div class="rr-detail">1 assist · 90 mins played</div></div><span class="rr-tag b">Bench</span><div class="rr-pts"><div class="rr-gw">—</div><div class="rr-tot">91 total</div></div></div>
+        <div class="rr l1"  style="animation-delay:.44s"><div class="rr-badge" style="background:#004170">PSG</div><div class="rr-info"><div class="rr-name">O. Dembélé</div><div class="rr-meta">FWD · PSG · Ligue 1</div><div class="rr-detail">1 goal · 78 mins played</div></div><span class="rr-tag b">Bench</span><div class="rr-pts"><div class="rr-gw">—</div><div class="rr-tot">88 total</div></div></div>
+        <div class="rr sa"  style="animation-delay:.495s"><div class="rr-badge" style="background:#9D2235">ROM</div><div class="rr-info"><div class="rr-name">L. Pellegrini</div><div class="rr-meta">MID · Roma · Serie A</div><div class="rr-detail" style="color:#dc2626;">Injury doubt — monitor</div></div><span class="rr-tag b">Bench</span><div class="rr-pts"><div class="rr-gw" style="color:var(--t3)">—</div><div class="rr-tot">74 total</div></div></div>
+        <div class="rr la"  style="animation-delay:.55s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="rr-info"><div class="rr-name">D. Carvajal</div><div class="rr-meta">DEF · Real Madrid · La Liga</div><div class="rr-detail">Clean sheet · 90 mins played</div></div><span class="rr-tag b">Bench</span><div class="rr-pts"><div class="rr-gw">—</div><div class="rr-tot">69 total</div></div></div>
+        <div class="rr la"  style="animation-delay:.605s"><div class="rr-badge" style="background:#004D98">BAR</div><div class="rr-info"><div class="rr-name">M. ter Stegen</div><div class="rr-meta">GK · Barcelona · La Liga</div><div class="rr-detail">0–3 loss · 0 saves</div></div><span class="rr-tag b">Bench</span><div class="rr-pts"><div class="rr-gw">—</div><div class="rr-tot">61 total</div></div></div>
+      </div>
+
+      <!-- ── STANDINGS ── -->
+      <div class="screen" id="screen-standings">
+        <div class="st-wrap" style="animation-delay:0s">
+          <div class="st-head">
+            <div class="st-hc rank">#</div>
+            <div class="st-hc name">Team</div>
+            <div class="st-hc num">W–L</div>
+            <div class="st-hc num">GW</div>
+            <div class="st-hc num">Total</div>
+          </div>
+          <div class="sr"><div class="sr-rank top">1</div><div class="sr-avatar" style="background:linear-gradient(135deg,#f59e0b,#d97706)">PU</div><div class="sr-info"><div class="sr-name">Phoenix United</div><div class="sr-sub">Alex T.</div></div><div class="sr-gw">71 pts</div><div class="sr-rec">19–8</div><div class="sr-pts">1842</div></div>
+          <div class="sr"><div class="sr-rank top">2</div><div class="sr-avatar" style="background:linear-gradient(135deg,#1D4ED8,#1e3a8a)">SC</div><div class="sr-info"><div class="sr-name">Storm City</div><div class="sr-sub">Jordan K.</div></div><div class="sr-gw">55 pts</div><div class="sr-rec">17–10</div><div class="sr-pts">1791</div></div>
+          <div class="sr me"><div class="sr-rank top">3</div><div class="sr-avatar" style="background:linear-gradient(135deg,#6D28D9,#2563EB)">TF</div><div class="sr-info"><div class="sr-name" style="color:var(--epl)">Trident FC</div><div class="sr-sub">Dhinesh · You</div></div><div class="sr-gw">62 pts</div><div class="sr-rec">16–11</div><div class="sr-pts" style="color:var(--epl)">1763</div></div>
+          <div class="sr"><div class="sr-rank">4</div><div class="sr-avatar" style="background:linear-gradient(135deg,#059669,#065f46)">GX</div><div class="sr-info"><div class="sr-name">Galaxy XI</div><div class="sr-sub">Sam R.</div></div><div class="sr-gw">58 pts</div><div class="sr-rec">15–12</div><div class="sr-pts">1744</div></div>
+          <div class="sr"><div class="sr-rank">5</div><div class="sr-avatar" style="background:linear-gradient(135deg,#DC2626,#991b1b)">IL</div><div class="sr-info"><div class="sr-name">Iron Lions</div><div class="sr-sub">Chris L.</div></div><div class="sr-gw">49 pts</div><div class="sr-rec">14–13</div><div class="sr-pts">1701</div></div>
+          <div class="sr"><div class="sr-rank">6</div><div class="sr-avatar" style="background:linear-gradient(135deg,#D97706,#92400e)">AF</div><div class="sr-info"><div class="sr-name">Atlas FC</div><div class="sr-sub">Mia W.</div></div><div class="sr-gw">44 pts</div><div class="sr-rec">13–14</div><div class="sr-pts">1682</div></div>
+          <div class="sr"><div class="sr-rank">7</div><div class="sr-avatar" style="background:linear-gradient(135deg,#7c3aed,#4c1d95)">VX</div><div class="sr-info"><div class="sr-name">Voltex</div><div class="sr-sub">Remi D.</div></div><div class="sr-gw">60 pts</div><div class="sr-rec">11–16</div><div class="sr-pts">1644</div></div>
+          <div class="sr"><div class="sr-rank">8</div><div class="sr-avatar" style="background:linear-gradient(135deg,#6b7280,#374151)">NM</div><div class="sr-info"><div class="sr-name">Nomads</div><div class="sr-sub">Priya S.</div></div><div class="sr-gw">38 pts</div><div class="sr-rec">9–18</div><div class="sr-pts">1598</div></div>
+        </div>
+      </div>
+
+      <!-- ── MATCHUP ── -->
+      <div class="screen" id="screen-matchup">
+        <div class="mh" style="animation-delay:0s">
+          <div class="mh-inner">
+            <div class="mh-team l">
+              <div class="mh-crest" style="background:linear-gradient(135deg,#6D28D9,#2563EB)">TF</div>
+              <div class="mh-tname">Trident FC</div>
+              <div class="mh-tlbl">You</div>
+            </div>
+            <div class="mh-center">
+              <div class="mh-nums">
+                <div class="mh-score" id="v-match2">0</div>
+                <div class="mh-dash">–</div>
+                <div class="mh-score losing">58</div>
+              </div>
+              <div class="mh-tag"><span style="color:#16a34a">⚡ Live</span> · GW28 · 72% complete</div>
+            </div>
+            <div class="mh-team r">
+              <div class="mh-crest" style="background:linear-gradient(135deg,#059669,#065f46)">GX</div>
+              <div class="mh-tname">Galaxy XI</div>
+              <div class="mh-tlbl">Sam R.</div>
+            </div>
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <div class="section-hd" style="margin-bottom:6px;"><span class="section-hd-lbl">Your Starters</span><span class="section-hd-ct">62 pts</span></div>
+            <div class="rr epl" style="animation-delay:.06s"><div class="rr-badge" style="background:#C8102E">LIV</div><div class="rr-info"><div class="rr-name">M. Salah</div><div class="rr-meta">FWD · EPL</div></div><div class="rr-pts"><div class="rr-gw">18</div></div></div>
+            <div class="rr la"  style="animation-delay:.11s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="rr-info"><div class="rr-name">Vinícius Jr.</div><div class="rr-meta">FWD · La Liga</div></div><div class="rr-pts"><div class="rr-gw">14</div></div></div>
+            <div class="rr sa"  style="animation-delay:.17s"><div class="rr-badge" style="background:#0068A8">INT</div><div class="rr-info"><div class="rr-name">A. Onana</div><div class="rr-meta">GK · Serie A</div></div><div class="rr-pts"><div class="rr-gw">11</div></div></div>
+            <div class="rr epl" style="animation-delay:.22s"><div class="rr-badge" style="background:#C8102E">LIV</div><div class="rr-info"><div class="rr-name">T. Alexander-Arnold</div><div class="rr-meta">DEF · EPL</div></div><div class="rr-pts"><div class="rr-gw">9</div></div></div>
+            <div class="rr la"  style="animation-delay:.28s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="rr-info"><div class="rr-name">K. Mbappé</div><div class="rr-meta">FWD · La Liga</div></div><div class="rr-pts"><div class="rr-gw">7</div></div></div>
+            <div class="rr bl"  style="animation-delay:.33s"><div class="rr-badge" style="background:#DC052D">BAY</div><div class="rr-info"><div class="rr-name">L. Goretzka</div><div class="rr-meta">MID · Bundesliga</div></div><div class="rr-pts"><div class="rr-gw">3</div></div></div>
+          </div>
+          <div>
+            <div class="section-hd" style="margin-bottom:6px;"><span class="section-hd-lbl">Galaxy XI</span><span class="section-hd-ct">58 pts</span></div>
+            <div class="rr epl" style="animation-delay:.06s"><div class="rr-badge" style="background:#6CABDD">MCI</div><div class="rr-info"><div class="rr-name">E. Haaland</div><div class="rr-meta">FWD · EPL</div></div><div class="rr-pts"><div class="rr-gw">21</div></div></div>
+            <div class="rr la"  style="animation-delay:.11s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="rr-info"><div class="rr-name">L. Messi</div><div class="rr-meta">FWD · La Liga</div></div><div class="rr-pts"><div class="rr-gw">12</div></div></div>
+            <div class="rr epl" style="animation-delay:.17s"><div class="rr-badge" style="background:#EF0107">ARS</div><div class="rr-info"><div class="rr-name">W. Saliba</div><div class="rr-meta">DEF · EPL</div></div><div class="rr-pts"><div class="rr-gw">10</div></div></div>
+            <div class="rr epl" style="animation-delay:.22s"><div class="rr-badge" style="background:#C8102E">LIV</div><div class="rr-info"><div class="rr-name">B. Diaz</div><div class="rr-meta">MID · EPL</div></div><div class="rr-pts"><div class="rr-gw">8</div></div></div>
+            <div class="rr sa"  style="animation-delay:.28s"><div class="rr-badge" style="background:#9400D3">FIO</div><div class="rr-info"><div class="rr-name">A. Di Maria</div><div class="rr-meta">MID · Serie A</div></div><div class="rr-pts"><div class="rr-gw">7</div></div></div>
+            <div class="rr sa"  style="animation-delay:.33s"><div class="rr-badge" style="background:#FB090B">ACM</div><div class="rr-info"><div class="rr-name">M. Maignan</div><div class="rr-meta">GK · Serie A</div></div><div class="rr-pts"><div class="rr-gw" style="color:var(--t3)">0*</div></div></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);text-align:right">* AC Milan match not yet played</div>
+      </div>
+
+      <!-- ── WAIVERS ── -->
+      <div class="screen" id="screen-waivers">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--t1)">Waivers &amp; Free Agents</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">Your priority: <strong style="color:var(--t1)">#3 of 8</strong> · Processes Tuesday night</div>
+          </div>
+          <div style="background:#f0ecff;color:var(--epl);padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700">Claim pending: N. Jackson</div>
+        </div>
+        <div class="filter-row">
+          <div class="fp on">All Leagues</div>
+          <div class="fp">EPL</div>
+          <div class="fp">La Liga</div>
+          <div class="fp">Serie A</div>
+          <div class="fp">Bundesliga</div>
+          <div class="fp">Ligue 1</div>
+        </div>
+        <div class="wa-row" style="animation-delay:.00s"><div class="rr-badge" style="background:#034694">CHE</div><div class="wa-info"><div class="wa-name">N. Jackson</div><div class="wa-meta">FWD · Chelsea · <span style="color:var(--epl);font-weight:600">Premier League</span></div></div><div class="wa-avg"><div class="wa-avg-val">8.4</div><div class="wa-avg-lbl">avg pts/GW</div></div><button class="btn-claim">Claim</button></div>
+        <div class="wa-row" style="animation-delay:.055s"><div class="rr-badge" style="background:#FEBE10;color:#00529F">RMA</div><div class="wa-info"><div class="wa-name">J. Bellingham</div><div class="wa-meta">MID · Real Madrid · <span style="color:var(--ll);font-weight:600">La Liga</span></div></div><div class="wa-avg"><div class="wa-avg-val">9.1</div><div class="wa-avg-lbl">avg pts/GW</div></div><button class="btn-claim">Claim</button></div>
+        <div class="wa-row" style="animation-delay:.11s"><div class="rr-badge" style="background:#C8102E">LIV</div><div class="wa-info"><div class="wa-name">A. Robertson</div><div class="wa-meta">DEF · Liverpool · <span style="color:var(--epl);font-weight:600">Premier League</span></div></div><div class="wa-avg"><div class="wa-avg-val">6.8</div><div class="wa-avg-lbl">avg pts/GW</div></div><button class="btn-claim">Claim</button></div>
+        <div class="wa-row" style="animation-delay:.165s"><div class="rr-badge" style="background:#FB090B">ACM</div><div class="wa-info"><div class="wa-name">R. Leão</div><div class="wa-meta">FWD · AC Milan · <span style="color:var(--sa);font-weight:600">Serie A</span></div></div><div class="wa-avg"><div class="wa-avg-val">7.2</div><div class="wa-avg-lbl">avg pts/GW</div></div><button class="btn-claim">Claim</button></div>
+        <div class="wa-row" style="animation-delay:.22s;opacity:.5"><div class="rr-badge" style="background:#DC052D">BAY</div><div class="wa-info"><div class="wa-name">L. Hernandez</div><div class="wa-meta">MID · Bayern · <span style="color:var(--bl);font-weight:600">Bundesliga</span></div></div><div class="wa-avg"><div class="wa-avg-val">5.4</div><div class="wa-avg-lbl">avg pts/GW</div></div><button class="btn-claim" disabled>Injured</button></div>
+        <div class="wa-row" style="animation-delay:.275s"><div class="rr-badge" style="background:#004170">PSG</div><div class="wa-info"><div class="wa-name">K. Mbappé Sr.</div><div class="wa-meta">MID · PSG · <span style="color:var(--l1);font-weight:600">Ligue 1</span></div></div><div class="wa-avg"><div class="wa-avg-val">6.1</div><div class="wa-avg-lbl">avg pts/GW</div></div><button class="btn-claim">Claim</button></div>
+      </div>
+
+      <!-- ── TRADES ── -->
+      <div class="screen" id="screen-trades">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:14px;font-weight:700;color:var(--t1)">Trade Inbox</div>
+          <div style="background:#FEF3C7;color:#D97706;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700">2 pending</div>
+        </div>
+        <div class="trade-c" style="animation-delay:.00s">
+          <div class="trade-hd"><div class="trade-from">From <strong>Galaxy XI</strong> · Sam R.</div><div class="trade-tag pending">Pending</div></div>
+          <div class="trade-body">
+            <div class="trade-side"><div class="trade-side-lbl">They send you</div><div class="trade-pname">E. Haaland</div><div class="trade-pmeta">FWD · Man City · EPL · 21 pts GW28</div></div>
+            <div class="trade-arrow">⇄</div>
+            <div class="trade-side"><div class="trade-side-lbl">You send them</div><div class="trade-pname">M. Salah</div><div class="trade-pmeta">FWD · Liverpool · EPL · 18 pts GW28</div></div>
+          </div>
+          <div class="trade-acts"><button class="btn-reject">Reject</button><button class="btn-accept">Accept</button></div>
+        </div>
+        <div class="trade-c" style="animation-delay:.08s">
+          <div class="trade-hd"><div class="trade-from">From <strong>Phoenix United</strong> · Alex T.</div><div class="trade-tag pending">Pending</div></div>
+          <div class="trade-body">
+            <div class="trade-side"><div class="trade-side-lbl">They send you</div><div class="trade-pname">L. Modric</div><div class="trade-pmeta">MID · Real Madrid · La Liga · 6 pts GW28</div></div>
+            <div class="trade-arrow">⇄</div>
+            <div class="trade-side"><div class="trade-side-lbl">You send them</div><div class="trade-pname">L. Goretzka</div><div class="trade-pmeta">MID · Bayern Munich · Bundesliga · 3 pts GW28</div></div>
+          </div>
+          <div class="trade-acts"><button class="btn-reject">Reject</button><button class="btn-accept">Accept</button></div>
+        </div>
+        <div class="st-wrap" style="animation-delay:.16s">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--bdr);font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Past Trades</div>
+          <div class="past-trade"><span style="color:#16a34a;font-weight:700">Accepted</span> · GW22 · You got R. Dias, sent P. Gavi to Storm City. Effective GW23.</div>
+          <div class="past-trade"><span style="color:#DC2626;font-weight:700">Rejected</span> · GW18 · Offered O. Dembélé for E. Haaland — Galaxy XI declined.</div>
+        </div>
+      </div>
+
+      <!-- ── DRAFT ── -->
+      <div class="screen" id="screen-draft">
+        <div class="row3">
+          <div class="stat-c" style="animation-delay:.00s"><div class="stat-lbl">Draft status</div><div class="stat-val" style="font-size:18px;letter-spacing:0;color:#16a34a;margin-top:3px">Complete</div><div class="stat-chg nu">Season 2025–26</div></div>
+          <div class="stat-c" style="animation-delay:.055s"><div class="stat-lbl">Your pick order</div><div class="stat-val">3rd</div><div class="stat-chg nu">of 8 teams</div></div>
+          <div class="stat-c" style="animation-delay:.11s"><div class="stat-lbl">Auto-picks used</div><div class="stat-val">1</div><div class="stat-chg nu">R2 · queue pick</div></div>
+        </div>
+        <div class="draft-wrap" style="animation-delay:.17s">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:12px;font-weight:700;color:var(--t1)">Draft Board · Rounds 1–4</div>
+            <div class="draft-legend">
+              <span><span class="dl-swatch" style="background:#f0ecff;border:1px solid var(--epl)"></span>Your pick</span>
+              <span><span class="dl-swatch" style="background:#FEF3C7"></span>Auto-pick</span>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="draft-tbl">
+              <thead><tr>
+                <th style="text-align:left;padding-left:12px">Round</th>
+                <th>Phoenix Utd</th><th>Storm City</th><th style="color:var(--epl)">Trident FC ★</th>
+                <th>Galaxy XI</th><th>Iron Lions</th><th>Atlas FC</th><th>Voltex</th><th>Nomads</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td class="rl">R1 →</td>
+                  <td>E. Haaland<br>FWD · EPL</td>
+                  <td>K. Mbappé†<br>FWD · La Liga</td>
+                  <td class="mine">M. Salah<br>FWD · EPL</td>
+                  <td>V. Jr.<br>FWD · La Liga</td>
+                  <td>R. Leão<br>FWD · Serie A</td>
+                  <td>L. Goretzka<br>MID · Bund</td>
+                  <td>A. Griezmann<br>FWD · La Liga</td>
+                  <td>B. Fernandes<br>MID · EPL</td>
+                </tr>
+                <tr>
+                  <td class="rl">← R2</td>
+                  <td>A. Onana<br>GK · Serie A</td>
+                  <td>W. Saliba<br>DEF · EPL</td>
+                  <td class="auto">T. Alexander-Arnold<br>DEF · EPL ⚙</td>
+                  <td>M. Maignan<br>GK · Serie A</td>
+                  <td>A. Robertson<br>DEF · EPL</td>
+                  <td>R. Dias<br>DEF · EPL</td>
+                  <td>D. Carvajal<br>DEF · La Liga</td>
+                  <td>K. De Bruyne<br>MID · EPL</td>
+                </tr>
+                <tr>
+                  <td class="rl">R3 →</td>
+                  <td>M. ter Stegen<br>GK · La Liga</td>
+                  <td>O. Dembélé<br>FWD · Ligue 1</td>
+                  <td class="mine">K. Mbappé<br>FWD · La Liga</td>
+                  <td>J. Bellingham<br>MID · La Liga</td>
+                  <td>B. Diaz<br>MID · EPL</td>
+                  <td>L. Pellegrini<br>MID · Serie A</td>
+                  <td>N. Barella<br>MID · Serie A</td>
+                  <td>P. Gavi<br>MID · La Liga</td>
+                </tr>
+                <tr>
+                  <td class="rl">← R4</td>
+                  <td>L. Modric<br>MID · La Liga</td>
+                  <td>A. Di Maria<br>MID · Serie A</td>
+                  <td class="mine">V. Jr.<br>FWD · La Liga</td>
+                  <td>N. Jackson<br>FWD · EPL</td>
+                  <td>H. Kane<br>FWD · Bund</td>
+                  <td>S. Mané<br>FWD · Bund</td>
+                  <td>T. Müller<br>MID · Bund</td>
+                  <td>A. Lacazette<br>FWD · Ligue 1</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:8px 14px;font-size:10px;color:var(--t3)">⚙ = auto-picked from pre-submitted queue · † = auto-picked (missed window) · Snake reversal each round</div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+/* ── Count-up ── */
+function countUp(el, target, ms) {
+  if (!el) return;
+  const start = performance.now();
+  const fmt = target >= 1000 ? v => v.toLocaleString() : v => String(v);
+  const tick = now => {
+    const p    = Math.min((now - start) / ms, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(Math.round(ease * target));
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ── Screen switcher ── */
+const titles = {
+  dashboard:'Dashboard', myteam:'My Team', standings:'Standings',
+  matchup:'Matchup', waivers:'Waivers', trades:'Trades', draft:'Draft Room'
+};
+
+function showScreen(id, navEl) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  const next = document.getElementById('screen-' + id);
+  if (!next) return;
+  next.classList.add('visible');
+  next.style.animation = 'slideRight 0.3s cubic-bezier(0.22,1,0.36,1) forwards';
+
+  next.querySelectorAll('.stat-c,.tc,.rr,.wa-row,.st-wrap,.mh,.trade-c,.draft-wrap').forEach((c, i) => {
+    c.style.opacity = '0';
+    c.style.animation = 'none';
+    void c.offsetWidth; // reflow
+    const delay = parseFloat(c.style.animationDelay) || i * 0.055;
+    c.style.animation = `rise 0.45s cubic-bezier(0.22,1,0.36,1) ${delay}s forwards`;
+  });
+
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const ni = document.getElementById('ni-' + id);
+  if (ni) ni.classList.add('active');
+
+  document.getElementById('topbar-title').textContent = titles[id] || id;
+
+  if (id === 'dashboard') {
+    countUp(document.getElementById('v-gw'),    62,   900);
+    countUp(document.getElementById('v-total'), 1763, 1100);
+    countUp(document.getElementById('v-match'), 62,   900);
+  }
+  if (id === 'matchup') {
+    countUp(document.getElementById('v-match2'), 62, 900);
+  }
+}
+
+function switchTo(id, tabEl) {
+  document.querySelectorAll('#outer-tabs .otab').forEach(b => b.classList.remove('on'));
+  tabEl.classList.add('on');
+  showScreen(id, null);
+}
+
+function toggleLg(id, btn) {
+  const panel = document.getElementById('lg-' + id);
+  const chev  = btn.querySelector('.lb-chev');
+  panel.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+/* ── Boot ── */
+window.addEventListener('load', () => {
+  countUp(document.getElementById('v-gw'),    62,   900);
+  countUp(document.getElementById('v-total'), 1763, 1100);
+  countUp(document.getElementById('v-match'), 62,   900);
+});
+
+/* ── Filter pills (toggle demo) ── */
+document.addEventListener('click', e => {
+  const fp = e.target.closest('.fp');
+  if (!fp) return;
+  fp.closest('.filter-row')?.querySelectorAll('.fp').forEach(p => p.classList.remove('on'));
+  fp.classList.add('on');
+});
+</script>
+</body>
+</html>

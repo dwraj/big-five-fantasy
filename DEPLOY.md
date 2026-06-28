@@ -146,7 +146,7 @@ Add to Railway/Vercel:
 ```
 VITE_SUPABASE_URL=https://erkwiyftgyclqctykiad.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-anon-key>
-VITE_API_FOOTBALL_KEY=a4c24a07221cb0cd395292f18e96ce50
+VITE_API_FOOTBALL_KEY=<your-api-football-key>
 PORT=3001
 NODE_ENV=production
 ```

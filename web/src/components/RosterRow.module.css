@@ -1,0 +1,81 @@
+.rr {
+  background: var(--w);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 16px;
+  animation: rise 0.45s var(--ease) forwards;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.rr:hover {
+  transform: translateX(5px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.09);
+}
+
+.rr::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.rr.epl::before { background: var(--epl); }
+.rr.la::before { background: var(--ll); }
+.rr.sa::before { background: var(--sa); }
+.rr.bl::before { background: var(--bl); }
+.rr.l1::before { background: var(--l1); }
+
+.rrBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--w);
+  font-size: 9px;
+  font-weight: 800;
+  transition: transform 0.2s var(--spring);
+}
+
+.rr:hover .rrBadge { transform: scale(1.12); }
+
+.rrInfo { flex: 1; min-width: 0; }
+.rrName { font-size: 13px; font-weight: 700; color: var(--t1); }
+.rrMeta { font-size: 10.5px; color: var(--t2); }
+
+.rrDetail {
+  font-size: 10px;
+  color: #16a34a;
+  font-weight: 600;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s;
+}
+
+.rr:hover .rrDetail { max-height: 20px; opacity: 1; }
+
+.rrTag {
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 9.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.rrTag.s { background: var(--t1); color: var(--w); }
+.rrTag.b { background: #f0f0f0; color: #999; }
+
+.rrPts { text-align: right; flex-shrink: 0; }
+.rrGw { font-size: 15px; font-weight: 900; color: var(--t1); letter-spacing: -0.5px; }
+.rrTot { font-size: 9.5px; color: var(--t3); }

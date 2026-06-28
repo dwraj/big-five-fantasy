@@ -1,0 +1,62 @@
+.hdr { display: flex; align-items: center; gap: 8px; }
+.hdrTitle { font-size: 14px; font-weight: 700; color: var(--t1); }
+.hdrCount { background: #FEF3C7; color: #D97706; padding: 2px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+
+.tradeC {
+  background: var(--w);
+  border-radius: 14px;
+  border: 1px solid var(--bdr);
+  padding: 14px;
+  animation: rise 0.5s var(--ease) forwards;
+}
+
+.tradeHd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.tradeFrom { font-size: 11px; font-weight: 600; color: var(--t2); }
+.tradeTag { font-size: 9.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.tradeTag.pending { background: #FEF3C7; color: #D97706; }
+
+.tradeBody { display: flex; align-items: center; gap: 10px; }
+.tradeSide { flex: 1; padding: 10px; border-radius: 10px; background: var(--bg); }
+.tradeSideLbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; color: var(--t3); margin-bottom: 4px; }
+.tradePname { font-size: 13px; font-weight: 700; color: var(--t1); }
+.tradePmeta { font-size: 10px; color: var(--t2); }
+.tradeArrow { font-size: 18px; color: var(--t3); flex-shrink: 0; }
+
+.tradeActs { display: flex; gap: 6px; margin-top: 12px; justify-content: flex-end; }
+
+.btnReject {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--w);
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnReject:hover { background: #FEF2F2; }
+
+.btnAccept {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #16a34a;
+  color: var(--w);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring);
+}
+.btnAccept:hover { transform: scale(1.05); }
+
+.stWrap {
+  background: var(--w);
+  border-radius: 14px;
+  border: 1px solid var(--bdr);
+  overflow: hidden;
+  animation: rise 0.5s var(--ease) forwards;
+}
+.pastHd { padding: 10px 14px; border-bottom: 1px solid var(--bdr); font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.6px; }
+.pastTrade { padding: 10px 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.04); font-size: 12px; color: var(--t2); }
+.pastTrade:last-child { border-bottom: none; }

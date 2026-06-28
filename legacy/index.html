@@ -1083,6 +1083,11 @@
       .sb-foot { border-left: 1px solid var(--bdr); }
     }
   </style>
+<script>
+  if (location.hostname === 'localhost') {
+    document.write('<script src="//localhost:35729/livereload.js?snipver=1"><\/script>');
+  }
+</script>
 </head>
 <body>
 
@@ -1557,6 +1562,17 @@
     }
   }
 
+  async function postAPI(endpoint, body) {
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+      });
+      return await res.json();
+    } catch (e) { console.error('POST failed', endpoint, e); return null; }
+  }
+
   async function loadPlayers() {
     const players = await fetchAPI('/players');
     return players || [];
@@ -1572,18 +1588,35 @@
     return standings || [];
   }
 
-  // Load and populate players on page init
+  // Sim state
+  const DEV = window.location.hostname === 'localhost'
+    || new URLSearchParams(location.search).has('sim');
   let cachedPlayers = [];
-  window.addEventListener('load', async () => {
-    console.log('📡 Loading players from API...');
+  let SIM = null;
+  let livePoller = null;
+
+  async function bootstrap() {
     cachedPlayers = await loadPlayers();
     if (cachedPlayers && cachedPlayers.length > 0) {
-      console.log(`✅ Loaded ${cachedPlayers.length} players`);
       populatePlayerCards();
-    } else {
-      console.log('📊 No players from API, using mock data');
     }
-  });
+    if (DEV) {
+      SIM = await fetchAPI('/dev/state');
+      renderDevPanel();
+      routeForPhase(SIM?.phase);
+    } else {
+      showScreen('dashboard');
+    }
+  }
+
+  function routeForPhase(phase) {
+    if (phase === 'DRAFTING')      { showScreen('draft');     renderDraftBoard(); }
+    else if (phase === 'LIVE_ACTION') { showScreen('dashboard'); startLivePolling(); }
+    else if (phase === 'POST_SEASON') { showScreen('standings'); renderStandings(); }
+    else                           { showScreen('dashboard'); }
+  }
+
+  window.addEventListener('load', bootstrap);
 
   const leagueMap = {
     'EPL': { color: '#6D28D9', bg: 'rgba(109,40,217,0.07)', badge: '#C8102E' },
@@ -1729,6 +1762,12 @@
     if (id === 'myteam') {
       populateRosterRows();
     }
+    if (id === 'standings' && DEV && SIM) {
+      renderStandings();
+    }
+    if (id === 'draft' && DEV && SIM) {
+      renderDraftBoard();
+    }
     if (id === 'matchup') {
       countUp(document.getElementById('v-match2'), 62, 900);
     }
@@ -1749,12 +1788,244 @@
     chev.classList.toggle('open');
   }
 
-  /* Init on load */
-  window.addEventListener('load', () => {
-    countUp(document.getElementById('v-gw'), 62, 900);
-    countUp(document.getElementById('v-total'), 1763, 1100);
-    countUp(document.getElementById('v-match'), 62, 900);
-  });
+  /* ── Dev panel ──────────────────────────────────────────────────────────── */
+  function renderDevPanel() {
+    if (!DEV || document.getElementById('dev-panel')) return updateDevPanel();
+    const el = document.createElement('div');
+    el.id = 'dev-panel';
+    el.innerHTML = `
+      <div class="dp-title">🧪 SIM</div>
+      <div class="dp-row" id="dp-phases">
+        ${['PRE_SEASON','DRAFTING','LIVE_ACTION','MID_WEEK','POST_SEASON']
+          .map(p => `<button data-phase="${p}">${p.replace('_',' ')}</button>`).join('')}
+      </div>
+      <div class="dp-row">
+        <button id="dp-live-start">▶ Live</button>
+        <button id="dp-live-stop">⏸ Live</button>
+        <button id="dp-advance">⏭ Mid-Week</button>
+      </div>
+      <div class="dp-row">
+        <button id="dp-fire">⚽ Fire goal (random starter)</button>
+      </div>
+      <div class="dp-status" id="dp-status"></div>`;
+    document.body.appendChild(el);
+    injectDevPanelStyles();
+
+    el.querySelector('#dp-phases').addEventListener('click', async (e) => {
+      const phase = e.target.dataset.phase; if (!phase) return;
+      await postAPI('/dev/phase', { phase });
+      SIM = await fetchAPI('/dev/state');
+      stopLivePolling();
+      routeForPhase(phase); updateDevPanel();
+    });
+    el.querySelector('#dp-live-start').onclick = async () => { await postAPI('/dev/live/start'); startLivePolling(); updateDevPanel(); };
+    el.querySelector('#dp-live-stop').onclick  = async () => { await postAPI('/dev/live/stop'); stopLivePolling(); updateDevPanel(); };
+    el.querySelector('#dp-advance').onclick    = async () => { await postAPI('/dev/advance'); SIM = await fetchAPI('/dev/state'); updateDevPanel(); };
+    el.querySelector('#dp-fire').onclick       = async () => { await fireRandomGoalFromClient(); };
+    updateDevPanel();
+  }
+
+  function updateDevPanel() {
+    const s = document.getElementById('dp-status'); if (!s || !SIM) return;
+    s.textContent = `phase=${SIM.phase} · live=${SIM.liveSimRunning}` +
+      (SIM.draft ? ` · draft R${SIM.draft.round}/P${SIM.draft.pick}${SIM.draft.isMyTurn ? ' (YOUR TURN)' : ''}` : '');
+  }
+
+  async function fireRandomGoalFromClient() {
+    // Fire a goal for a random *starter* (server-side); firing for a non-starter
+    // would not affect any matchup score.
+    const r = await postAPI('/dev/live/fire-random', { type: 'goal' });
+    if (r && !r.ok) console.warn('fire-random:', r.error);
+    const state = await fetchAPI('/dev/live-state');
+    if (state) renderScoreboard(state);
+  }
+
+  function injectDevPanelStyles() {
+    if (document.getElementById('dev-panel-styles')) return;
+    const css = document.createElement('style');
+    css.id = 'dev-panel-styles';
+    css.textContent = `
+      #dev-panel{position:fixed;right:12px;bottom:12px;z-index:9999;background:#111;color:#fff;
+        font:12px/1.4 system-ui;padding:10px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.4);width:240px}
+      #dev-panel .dp-title{font-weight:700;margin-bottom:6px}
+      #dev-panel .dp-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+      #dev-panel button{background:#2d2d2d;color:#fff;border:1px solid #444;border-radius:6px;
+        padding:4px 6px;cursor:pointer;font-size:11px}
+      #dev-panel button:hover{background:#3d3d6d}
+      #dev-panel .dp-status{opacity:.8;border-top:1px solid #333;padding-top:6px;font-size:11px}`;
+    document.head.appendChild(css);
+  }
+
+  /* ── Draft board ─────────────────────────────────────────────────────────── */
+  async function renderDraftBoard() {
+    if (!SIM) return;
+    const draft = await fetchAPI(`/drafts/${SIM.leagueId}`);
+    const teams = draft?.draft_order || [];
+    const picks = draft?.draft_picks || [];
+    const playerMap = Object.fromEntries(cachedPlayers.map(p => [p.id, p]));
+    const teamMap = Object.fromEntries((SIM.teams || []).map(t => [t.id, t]));
+
+    const numTeams = teams.length || 8;
+    const maxRound = draft ? Math.max(...picks.map(p => p.round), draft.current_round || 1) : 1;
+
+    // Build grid: grid[round][slot] = pick
+    const slotForRound = (round, pickNumber) =>
+      round % 2 === 1
+        ? ((pickNumber - 1) % numTeams) + 1
+        : numTeams - ((pickNumber - 1) % numTeams);
+
+    const grid = {};
+    for (const pick of picks) {
+      const slot = slotForRound(pick.round, pick.pick_number);
+      if (!grid[pick.round]) grid[pick.round] = {};
+      grid[pick.round][slot] = pick;
+    }
+
+    // thead
+    const theadCells = teams.map(o => {
+      const t = teamMap[o.team_id];
+      const name = t ? t.name : `Team ${o.slot}`;
+      const isMe = SIM && o.team_id === SIM.humanTeamId;
+      return `<th${isMe ? ' style="color:var(--epl)"' : ''}>${name}${isMe ? ' ★' : ''}</th>`;
+    });
+
+    // tbody
+    const tbodyRows = [];
+    for (let r = 1; r <= maxRound; r++) {
+      const dir = r % 2 === 1 ? '→' : '←';
+      let cells = `<td class="rl">R${r} ${dir}</td>`;
+      for (let slot = 1; slot <= numTeams; slot++) {
+        const pick = grid[r]?.[slot];
+        if (pick) {
+          const pl = playerMap[pick.player_id];
+          const isMe = pick.team_id === SIM?.humanTeamId;
+          const cls = isMe ? 'mine' : (pick.is_auto ? 'auto' : '');
+          cells += `<td${cls ? ` class="${cls}"` : ''}>${pl ? pl.name : '?'}<br>${pl?.position || ''}</td>`;
+        } else {
+          cells += '<td>—</td>';
+        }
+      }
+      tbodyRows.push(`<tr>${cells}</tr>`);
+    }
+
+    const tbl = document.querySelector('.draft-tbl');
+    if (tbl) {
+      tbl.querySelector('thead tr').innerHTML = `<th style="text-align:left;padding-left:12px">Round</th>${theadCells.join('')}`;
+      tbl.querySelector('tbody').innerHTML = tbodyRows.join('');
+    }
+
+    // Available players list
+    renderAvailablePlayers(picks.map(p => p.player_id));
+  }
+
+  function renderAvailablePlayers(takenIds) {
+    const takenSet = new Set(takenIds);
+    const available = cachedPlayers.filter(p => !takenSet.has(p.id));
+    const isMyTurn = SIM?.draft?.isMyTurn && !SIM?.draft?.complete;
+
+    let container = document.getElementById('draft-available');
+    if (!container) {
+      const wrap = document.querySelector('#screen-draft .draft-wrap') || document.querySelector('#screen-draft');
+      if (!wrap) return;
+      container = document.createElement('div');
+      container.id = 'draft-available';
+      container.style.cssText = 'margin-top:12px;padding:0 14px';
+      wrap.appendChild(container);
+    }
+
+    if (!isMyTurn) {
+      container.innerHTML = `<div style="color:var(--t3);font-size:12px;padding:8px 0">${SIM?.draft?.complete ? 'Draft complete.' : 'Waiting for bots...'}</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--epl)">Your turn — pick a player</div>
+      ${available.slice(0, 30).map(p => `
+        <div class="rr" style="cursor:pointer" data-pid="${p.id}" onclick="draftPlayer('${p.id}')">
+          <div class="rr-info"><div class="rr-name">${p.name}</div><div class="rr-meta">${p.position} · ${p.club || ''}</div></div>
+          <div class="rr-pts"><div class="rr-gw">${p.season_points || 0}</div></div>
+        </div>`).join('')}`;
+  }
+
+  window.draftPlayer = async function(playerId) {
+    if (!SIM?.draft?.isMyTurn) return;
+    const r = await postAPI('/dev/draft/pick', { playerId });
+    if (r?.ok) {
+      SIM = await fetchAPI('/dev/state');
+      updateDevPanel();
+      renderDraftBoard();
+    } else {
+      alert(r?.error || 'Draft pick failed');
+    }
+  };
+
+  /* ── Live scoreboard polling ─────────────────────────────────────────────── */
+  function startLivePolling() {
+    if (livePoller) return;
+    livePoller = setInterval(async () => {
+      const state = await fetchAPI('/dev/live-state');
+      if (state) renderScoreboard(state);
+    }, 2500);
+  }
+
+  function stopLivePolling() {
+    if (livePoller) { clearInterval(livePoller); livePoller = null; }
+  }
+
+  function renderScoreboard(state) {
+    const teamMap = Object.fromEntries((state.teams || []).map(t => [t.id, t]));
+    const onNow = document.querySelector('.on-now');
+    if (!onNow) return;
+
+    const matchupHtml = (state.matchups || []).map(m => {
+      const home = teamMap[m.home_team_id]?.name || 'Team';
+      const away = teamMap[m.away_team_id]?.name || 'Team';
+      return `<div class="lp">
+        <div class="lp-pip${m.status === 'active' ? '' : ' done'}"></div>
+        <div class="lp-body">
+          <div class="lp-n">${home} vs ${away}</div>
+          <div class="lp-match">${home} <span class="score-em">${m.home_score}–${m.away_score}</span> ${away} · ${m.status === 'active' ? '<span class="live-min">LIVE</span>' : '<span class="done-label">FT</span>'}</div>
+        </div>
+        <div class="lp-pts">${Math.max(m.home_score, m.away_score)}</div>
+      </div>`;
+    }).join('');
+
+    onNow.innerHTML = `<div class="on-now-label">Live Matchups — GW${state.gameweek?.number || ''}</div>
+      <div class="lb">
+        <div class="lb-h" onclick="this.nextElementSibling.classList.toggle('open')">
+          <div class="lb-color" style="background:var(--epl)"><i class="ti ti-ball-football"></i></div>
+          <span class="lb-name">Matchups</span>
+          <i class="ti ti-chevron-right lb-chev open"></i>
+        </div>
+        <div class="lb-players open">${matchupHtml}</div>
+      </div>`;
+  }
+
+  /* ── Standings ───────────────────────────────────────────────────────────── */
+  async function renderStandings() {
+    if (!SIM) return;
+    const standings = await loadStandings(SIM.leagueId);
+    const container = document.querySelector('#screen-standings .st-wrap');
+    if (!container || !standings?.length) return;
+
+    const rows = standings.map((t, i) => {
+      const isMe = t.team_id === SIM.humanTeamId || t.id === SIM.humanTeamId;
+      const initials = (t.name || 'T').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      return `<div class="sr${isMe ? ' me' : ''}">
+        <div class="sr-rank${i < 3 ? ' top' : ''}">${i + 1}</div>
+        <div class="sr-avatar" style="background:linear-gradient(135deg,var(--epl),#2563EB)">${initials}</div>
+        <div class="sr-info"><div class="sr-name${isMe ? '" style="color:var(--epl)' : ''}">${t.name}</div><div class="sr-sub">${isMe ? 'You' : ''}</div></div>
+        <div class="sr-gw">${t.gameweek_points || 0} pts</div>
+        <div class="sr-rec">${t.wins || 0}–${t.losses || 0}</div>
+        <div class="sr-pts">${t.total_points || 0}</div>
+      </div>`;
+    }).join('');
+
+    const head = container.querySelector('.st-head');
+    container.innerHTML = '';
+    if (head) container.appendChild(head);
+    container.insertAdjacentHTML('beforeend', rows);
+  }
 
   /* Filter pill toggle */
   document.addEventListener('click', e => {

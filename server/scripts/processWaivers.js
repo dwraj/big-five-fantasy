@@ -206,4 +206,10 @@ async function processWaivers() {
   console.log(`\n✅ Waiver processing complete: ${totalProcessed} claims processed`);
 }
 
-processWaivers().catch(console.error);
+export async function processWaiversForLeague(leagueId, _gameweekId) {
+  return processLeagueWaivers(leagueId);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  processWaivers().catch(console.error);
+}
