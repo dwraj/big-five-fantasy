@@ -33,3 +33,6 @@ Thumbs.db
 .env.example
 .vercel
 .env*
+
+# Local git credentials (never commit)
+.git-credentials.local
